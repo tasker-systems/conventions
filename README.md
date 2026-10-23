@@ -24,10 +24,16 @@ hole, not a default.
 doctrine/        the stance, in prose — why each rule exists
   tenets.md        the short list everything else follows from
   rules.md         the rule register: id, statement, enforcement per repo
-  rust.md          lints, unsafe, errors, toolchain
+  rust.md          lints, formatting, API shape, unsafe, errors, panics, toolchain
+  python.md        ruff, mypy, errors, logging, generated code
+  typescript.md    Biome, tsconfig, types, suppressions, generated code
+  shell.md         bash, strict mode, ShellCheck, portability
+  docs.md          Markdown shape and links
+  api.md           JSON on the wire and in the OpenAPI spec
   supply-chain.md  dependencies, advisories, licenses, Actions, toolchain inputs
   security.md      credentials, redaction, SQL, auth posture
   concurrency.md   bounded resources, contained failure, coordination in the database
+  testing.md       test tiers, ignored tests, CI shape
   tripwires.md     how a repo-specific guard is written, tested and wired
   agent-guidance.md how a consuming repo's agent guidance is shaped
 rust/            canonical config a consuming repo adopts
@@ -35,6 +41,13 @@ rust/            canonical config a consuming repo adopts
   clippy.toml            disallowed methods and thresholds
   deny.toml              cargo-deny: sources, licenses, bans
   audit.toml             the shape of a reviewed advisory-ignore list
+python/
+  ruff.toml              the canonical ruff selection
+typescript/
+  biome.json             the shared Biome rule set
+  tsconfig.base.json     the strict compiler base
+sources/         ledgers of external guides read against the baseline — what was adopted,
+                 adapted or rejected, and why (Google's style guides, 2026-10-23)
 ```
 
 Still to come, each its own change: the tripwire harness and the portable tripwires, reusable
@@ -44,16 +57,19 @@ baseline, and the agent skill projected into each repo.
 ## Adopting
 
 Not yet mechanised. Until the drift check exists, a consuming repo adopts by copying the files in
-`rust/` and recording the baseline commit it copied from. Once it exists, divergence from the
-pinned baseline fails that repo's CI — which is the point: "the same in both repos" should be a
-checked invariant, not a habit.
+`rust/`, `python/` and `typescript/` and recording the baseline commit it copied from. Once it
+exists, divergence from the pinned baseline fails that repo's CI — which is the point: "the same in
+both repos" should be a checked invariant, not a habit.
 
-## Scope of v0
+## Scope
 
-Rust workspaces only. Ruby, Python and TypeScript conventions are deliberately out of scope until
-the Rust baseline holds in both consumers. Domain-specific guards (temper's authorization sinks,
-tasker-core's state-machine rules) stay in their own repositories; this repository owns the *shape*
-of a guard, not every guard.
+Rust was v0, and the Rust baseline is still the most complete. Python, TypeScript, shell,
+Markdown and HTTP API conventions were added on 2026-10-23, from a reading of Google's style guides
+against what both repositories actually do ([`sources/`](sources/)). Each of those rules carries a
+status like any other; many are `uncovered` or `partial` today, which is the point of writing them
+down. Ruby has no external guide behind it yet and no doctrine file. Domain-specific guards
+(temper's authorization sinks, tasker-core's state-machine rules) stay in their own repositories;
+this repository owns the *shape* of a guard, not every guard.
 
 The goal this repository serves, its clauses and their coverage, live in the `+tasker-systems/conventions`
 context in Temper.

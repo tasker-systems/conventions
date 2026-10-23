@@ -20,6 +20,10 @@ canonical configuration (`rust/`) that consuming repos adopt.
   letter and broken in spirit. Keep the reason short, but keep it.
 - **Config in `rust/` must be valid as shipped.** A change to a config file is checked against a
   scratch workspace (or a consumer) before it lands; say how in the PR.
+- **An external guide enters through a ledger.** A rule taken from a published style guide is
+  restated in doctrine with our id and our reason, and [`sources/`](sources/) records the guide's
+  verdict per section (adopted, adapted, covered, rejected, and why). Read the ledger before
+  proposing a rule from a guide that has one; a rejection there is a decision, not an oversight.
 - **Don't import a consumer's domain.** Generalise a pattern; leave its temper- or
   tasker-core-specific content where it lives.
 - **No process artifacts here.** Specs, plans and reviews for this repo go to

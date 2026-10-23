@@ -13,5 +13,8 @@ disallowed-methods = [
 # Unbounded-by-default constructors that test code legitimately uses, such as in a mock, take
 # #[expect(clippy::disallowed_methods, reason = "...")] at the call site.
 
+# RUST-ERR-4: tests may unwrap. Inert until `unwrap_used` is turned on in the lint table.
+allow-unwrap-in-tests = true
+
 # RUST-TC-1: clippy reads the MSRV from `rust-version` in Cargo.toml; nothing is set here, so that
 # there is one source for it.
