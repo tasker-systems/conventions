@@ -36,3 +36,17 @@ CI and compared to what is committed.
 **CI-4 — the local hook runs what the change can affect.** The pre-commit hook classifies what is
 staged and runs only the checks those files can break, plus secret scanning on everything. *Why:* a
 hook that always runs everything trains `--no-verify`, and a bypassed hook protects nothing.
+
+**CI-5 — required checks run in the merge queue.** If a repository uses a merge queue, every
+workflow that produces a required check triggers on `merge_group`. Scope detection there diffs
+against `merge_group.base_sha`. *Why:* the queue tests the exact commit that will land. A required
+check that never runs on `gh-readonly-queue/*` never reports, so every queued PR waits out the
+queue's timeout and is ejected. tasker-core's queue could not merge anything until its `ci.yml`
+gained the trigger.
+
+**CI-6 — job timeouts budget for cold caches.** A job's `timeout-minutes` allows for the slowest
+legitimate run, not the typical one. Merge-queue runs read only the base branch's caches, so they
+build colder than PR runs. *Why:* a timeout that cancels a job after every test has passed reports a
+failure that is not one. tasker-core's integration job passed all 474 tests in the queue and was
+cancelled at 25 minutes; it now has 40.
+
