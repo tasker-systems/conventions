@@ -59,6 +59,16 @@ pinned to a version, and new releases are held behind a minimum age (temper's `m
 `minimum_release_age = "7d"`). *Why:* a freshly published release is the window a hijacked package
 uses.
 
+*Security releases are the exception to the cooldown.* When a security release lands inside the
+release-age window, a fuzzy pin still resolves to the vulnerable version. In that case:
+- pin the fixed version **exactly**, since exact pins bypass the window;
+- write a comment beside the pin saying when to return it to the fuzzy pin;
+- pin the same exact version in every CI setup step (`setup-node`, `setup-python`, toolchain
+  actions). A fuzzy CI version such as `node-version: "24"` can be satisfied by an older release
+  already in the runner's tool cache.
+
+(temper, Node 24.22.1, 2026-10-22.)
+
 **SC-IN-2 — every ecosystem present has dependency updates.** Dependabot covers every lockfile in
 the repo — cargo, Actions, and each language and container ecosystem — grouped weekly. *Why:*
 pinning without updates trades a supply-chain risk for an unpatched one.

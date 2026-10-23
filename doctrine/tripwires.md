@@ -68,3 +68,4 @@ Generalised from temper. Each will ship from this repository with its bite test:
 | migration-order | a new migration sorts after the base branch's newest | — |
 | production-features | test-only features are absent from shipped binaries | SEC-TEST-1 |
 | channel-literals | no literal channel capacity outside tests | CONC-BOUND-2 |
+| merge-group-trigger | every workflow producing a required check triggers on `merge_group` | CI-5 |

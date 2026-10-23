@@ -14,7 +14,8 @@ says why it is not.
 | **convention: …** | Deliberately not gated, with the reason |
 | **uncovered** | Not followed, or not checked. A known hole |
 
-Statuses were taken on 2026-10-21 against `temper@f460428` and `tasker-core@48ac836`, from a
+Statuses were taken on 2026-10-21 against `temper@f460428` and `tasker-core@48ac836`, and
+amended on 2026-10-23 for tasker-core#376 and temper#1217, from a
 read-only inventory of each repo; counts come from grep. Gated and uncovered cells were checked by
 hand. A `practiced` cell is a reading of the code, not a proof — the first grounding pass on each
 section re-verifies them. A change that alters a status updates its row in the same change.
@@ -24,7 +25,7 @@ section re-verifies them. A change that alters a status updates its row in the s
 | Id | Rule | temper | tasker-core |
 |---|---|---|---|
 | RUST-LINT-1 | One workspace lint table, inherited by every crate | uncovered (no `[lints]` table) | gated: workspace table, every crate inherits |
-| RUST-LINT-2 | Clippy and rustdoc `-D warnings` on PRs | gated: code-quality.yml, pre-push | uncovered: PR clippy lacks `-D warnings`; doc lacks `RUSTDOCFLAGS` |
+| RUST-LINT-2 | Clippy and rustdoc `-D warnings` on PRs | gated: code-quality.yml, pre-push | gated: code-quality.yml (tasker-core#376); release pre-flight clippy still lacks it |
 | RUST-LINT-3 | `#[expect(reason)]`, never `#[allow]` | uncovered (no rule; ~19 `#[allow]`) | partial: written rule; lint commented out; ~33 `#[allow]` |
 | RUST-LINT-4 | Lint adoption is audit-before-enforce | convention: a process rule, judged in review | convention: same |
 | RUST-UNSAFE-1 | `#![forbid(unsafe_code)]` in every crate root | uncovered | uncovered (no production unsafe, but no forbid) |
@@ -47,8 +48,8 @@ section re-verifies them. A change that alters a status updates its row in the s
 | SC-DENY-1 | Only crates.io | gated: `cargo deny check sources` | uncovered (no cargo-deny) |
 | SC-DENY-2 | License allowlist | gated: `cargo deny check licenses` | uncovered |
 | SC-DENY-3 | Bans (wildcards, deny list; duplicates warn) | uncovered (bans not run) | uncovered |
-| SC-GHA-1 | Every `uses:` SHA-pinned | partial: privileged jobs gated by `audit-privileged-action-pins.sh`; 39/82 overall | uncovered: 0/118 |
-| SC-GHA-2 | Top-level `permissions:` | partial: 13/14 workflows; not gated | uncovered: 0/12 |
+| SC-GHA-1 | Every `uses:` SHA-pinned | partial: privileged jobs gated by `audit-privileged-action-pins.sh`; 39/82 overall | practiced: every `uses:` pinned (tasker-core#376); no tripwire |
+| SC-GHA-2 | Top-level `permissions:` | partial: 13/14 workflows; not gated | practiced: 12/12 (tasker-core#376); no tripwire |
 | SC-GHA-3 | Release-chain triggers pinned | gated: `check-release-chain-triggers.sh` | uncovered |
 | SC-IN-1 | Tool installs pinned or cooled | gated: mise `minimum_release_age`, `mise.lock` | uncovered |
 | SC-IN-2 | Dependency updates for every ecosystem | practiced | partial: cargo and Actions; PR #341 adds the rest |
@@ -112,6 +113,8 @@ section re-verifies them. A change that alters a status updates its row in the s
 | CI-2 | One required aggregate check | gated: `ci-success` | gated: `CI Success` |
 | CI-3 | Generated artifacts drift-checked | gated: every generated artifact | partial: codegen syntax only |
 | CI-4 | Selective pre-commit hook | practiced | partial: fmt only, opt-in |
+| CI-5 | Required checks run on `merge_group` | gated: `ci.yml` `merge_group` trigger; queue exercised | practiced: `ci.yml` `merge_group` trigger (tasker-core#376); first queue merge 2026-10-23; no tripwire |
+| CI-6 | Job timeouts budget for cold-cache queue runs | unexamined | practiced: integration timeout 25→40 min (tasker-core#376) |
 
 ## Agent guidance
 
@@ -122,4 +125,4 @@ section re-verifies them. A change that alters a status updates its row in the s
 | AG-3 | Rules state their enforcement | uncovered | uncovered (`SQLX_OFFLINE` contradiction) |
 | AG-4 | Facts derived or checked | partial: CLI and config references drift-gated | uncovered (stale crate list) |
 | AG-5 | Baseline arrives as a projected skill | uncovered (not built) | uncovered |
-| AG-6 | Hooks point at real paths | practiced | uncovered (SessionStart path wrong) |
+| AG-6 | Hooks point at real paths | practiced | practiced (SessionStart path fixed, tasker-core#376); no check |
