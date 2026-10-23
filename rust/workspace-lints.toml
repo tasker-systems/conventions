@@ -46,6 +46,24 @@ disallowed_methods = "warn"
 # Duplicate versions are pervasive and reported by cargo-deny's `bans` (SC-DENY-3) instead.
 multiple_crate_versions = "allow"
 
+# RUST-LINT-5 / RUST-API-3, -4, -5: single lints from the held-off style/complexity groups that
+# hold a written rule. Measured 2026-10-23 on lib and bin targets with clippy 1.99: 0 findings in
+# temper@d530840 and in tasker-core@3888d42, so each lands without an audit.
+ptr_arg = "warn"
+borrowed_box = "warn"
+should_implement_trait = "warn"
+derivable_impls = "warn"
+new_without_default = "warn"
+len_without_is_empty = "warn"
+wrong_self_convention = "warn"
+unnecessary_unwrap = "warn"
+
+# Candidates with findings, held until each repo's audit (RUST-LINT-4). Counts are lib and bin
+# targets, 2026-10-23, temper / tasker-core. Each needs the clippy.toml setting beside it.
+# wildcard_imports = "warn"     # RUST-ORG-1:  4 / 26
+# unwrap_used = "warn"          # RUST-ERR-4: 11 / 76 (clippy.toml: allow-unwrap-in-tests = true)
+# missing_panics_doc = "warn"   # RUST-DOC-1: 25 / 25 (library crates only)
+
 # Held off in v0. Turning any on is a ruling, adopted per RUST-LINT-4.
 # complexity = { level = "warn", priority = -1 }
 # perf       = { level = "warn", priority = -1 }

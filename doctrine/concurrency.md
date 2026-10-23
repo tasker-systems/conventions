@@ -33,6 +33,18 @@ metrics.
 or handler boundary is contained (`catch_unwind`, or the `JoinError` inspected) and reported. *Why:*
 a detached task that panics disappears; the work it was doing silently stops.
 
+Containment by `catch_unwind` or `JoinError` only exists in a build that unwinds. Under
+`panic = "abort"` the process dies at the first panic, whatever the code says — see
+[RUST-PANIC-1](rust.md#panics). A workspace either ships `unwind` or treats a panic as a process
+restart, and says which.
+
+**CONC-FAIL-3 — a poisoned lock is not quietly recovered.** A poisoned `Mutex` or `RwLock` means a
+holder panicked mid-update; the data behind it may be half-written. Propagate the poison (or treat
+it as fatal). Recovering with `PoisonError::into_inner` is a reasoned exception, allowed only where
+every write replaces the whole value, so no torn state can exist, and a comment at the site says so.
+temper-client's in-memory token store is the example. *Why:* the guard hands back whatever the
+panicking thread left behind, and code that reads it carries on with state nobody vouched for.
+
 **CONC-FAIL-2 — concurrent work is named.** Spawned tasks are named (tasker-core's `spawn_named!`)
 and acts carry their own tracing span (temper's `#[act_span]`, with `skip_all` so arguments are not
 recorded by accident). *Why:* a trace or a tokio-console view should say what each unit of work is.
