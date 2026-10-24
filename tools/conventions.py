@@ -904,8 +904,9 @@ class Case:
     offline: bool = True
 
 
-def first_leaf(adopted: Adopted, consumer: Consumer) -> str:
-    """The first canonical key a seed can override: a leaf outside any declared local slot."""
+def first_leaf(adopted: Adopted, consumer: Consumer) -> str | None:
+    """The first canonical key a seed can override: a leaf outside any declared local slot. None
+    when every canonical key is a slot (audit.toml's ignore list), where only an addition bites."""
     canon = load_structured(consumer.baseline_dir / adopted.canonical) or {}
     if adopted.mode == "table" and adopted.canonical_table:
         canon = subtable(canon, adopted.canonical_table) or {}
@@ -914,7 +915,7 @@ def first_leaf(adopted: Adopted, consumer: Consumer) -> str:
     for leaf in flatten(canon):
         if leaf and leaf not in skip and not _in_slot(leaf, slots):
             return leaf
-    raise SeedMissed(f"{adopted.canonical} has no key a seed can override")
+    return None
 
 
 def adopted_cases(consumer: Consumer) -> list[Case]:
@@ -931,16 +932,19 @@ def adopted_cases(consumer: Consumer) -> list[Case]:
             )
             continue
         leaf = first_leaf(adopted, consumer)
-        local_key = _join(adopted.table, leaf) if adopted.mode == "table" else leaf
-        cases.append(
-            Case(
-                f"{rel} overrides canonical {local_key}",
-                lambda c, rel=rel, k=local_key: rewrite(
-                    c / rel, lambda d: set_path(d, k, WITNESS_VALUE)
-                ),
-                f"A: {rel}: {local_key} (canonical",
+        if leaf is None and adopted.mode != "superset":
+            raise SeedMissed(f"{adopted.canonical} has no key a seed can override")
+        if leaf is not None:
+            local_key = _join(adopted.table, leaf) if adopted.mode == "table" else leaf
+            cases.append(
+                Case(
+                    f"{rel} overrides canonical {local_key}",
+                    lambda c, rel=rel, k=local_key: rewrite(
+                        c / rel, lambda d: set_path(d, k, WITNESS_VALUE)
+                    ),
+                    f"A: {rel}: {local_key} (canonical",
+                )
             )
-        )
         if adopted.mode == "extends":
             ref_key = adopted.key or ("extend" if rel.endswith(".toml") else "extends")
             cases.append(
@@ -965,14 +969,16 @@ def adopted_cases(consumer: Consumer) -> list[Case]:
 def exception_cases(consumer: Consumer) -> list[Case]:
     if not consumer.adopted:
         raise SeedMissed("nothing is adopted, so no exception can be seeded")
-    adopted = next(
-        (a for a in consumer.adopted if load_structured(consumer.baseline_dir / a.canonical)),
-        None,
-    )
-    if adopted is None:
-        raise SeedMissed("no adopted file is TOML or JSON, so no exception can be seeded")
+    seedable = [
+        (a, leaf)
+        for a in consumer.adopted
+        if load_structured(consumer.baseline_dir / a.canonical)
+        and (leaf := first_leaf(a, consumer)) is not None
+    ]
+    if not seedable:
+        raise SeedMissed("no adopted file has a canonical key to diverge from")
+    adopted, leaf = seedable[0]
     rel = adopted.path
-    leaf = first_leaf(adopted, consumer)
     key = _join(adopted.table, leaf) if adopted.mode == "table" else leaf
 
     def diverge(copy: Path) -> None:
