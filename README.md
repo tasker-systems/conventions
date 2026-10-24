@@ -1,15 +1,22 @@
 # conventions
 
-The shared engineering baseline for tasker-systems repositories. Today that means two Rust
-workspaces — [`temper`](https://github.com/tasker-systems/temper) and
-[`tasker-core`](https://github.com/tasker-systems/tasker-core) — and, later, the polyglot surfaces
-around them.
+The shared engineering baseline for tasker-systems repositories. It is public, and five
+repositories consume it:
 
-The two projects grew up separately and are each strong where the other is thin. tasker-core
-carries the code-level doctrine (written tenets, a phased lint table, bounded concurrency, the
-distributed-systems primitives); temper carries the enforcement machinery (bite-tested tripwires,
-blocking supply-chain gates, drift checks on everything generated). This repository is where the
-two halves meet, so that a rule written once is enforced everywhere it claims to be.
+| Consumer | Visibility |
+|---|---|
+| [`temper`](https://github.com/tasker-systems/temper) | public |
+| [`tasker-core`](https://github.com/tasker-systems/tasker-core) | public |
+| [`temper-contrib`](https://github.com/tasker-systems/temper-contrib) | public |
+| [`tasker-contrib`](https://github.com/tasker-systems/tasker-contrib) | public (its own surfaces; templates and example apps are user-owned and out of scope) |
+| `storyteller` | private |
+
+The baseline began from the first two. They grew up separately and are each strong where the other
+is thin. tasker-core carries the code-level doctrine (written tenets, a phased lint table, bounded
+concurrency, the distributed-systems primitives); temper carries the enforcement machinery
+(bite-tested tripwires, blocking supply-chain gates, drift checks on everything generated). This
+repository is where the two halves meet, so that a rule written once is enforced everywhere it
+claims to be.
 
 ## The one idea
 
@@ -59,17 +66,21 @@ baseline, and the agent skill projected into each repo.
 Not yet mechanised. Until the drift check exists, a consuming repo adopts by copying the files in
 `rust/`, `python/` and `typescript/` and recording the baseline commit it copied from. Once it
 exists, divergence from the pinned baseline fails that repo's CI — which is the point: "the same in
-both repos" should be a checked invariant, not a habit.
+every repo" should be a checked invariant, not a habit.
 
 ## Scope
 
-Rust was v0, and the Rust baseline is still the most complete. Python, TypeScript, shell,
-Markdown and HTTP API conventions were added on 2026-10-23, from a reading of Google's style guides
-against what both repositories actually do ([`sources/`](sources/)). Each of those rules carries a
+Rust was v0, and the Rust baseline is still the most complete. Python, TypeScript, shell, Markdown
+and HTTP API conventions were added on 2026-10-23, from a reading of Google's style guides against
+what temper and tasker-core actually do ([`sources/`](sources/)). Each of those rules carries a
 status like any other; many are `uncovered` or `partial` today, which is the point of writing them
 down. Ruby has no external guide behind it yet and no doctrine file. Domain-specific guards
 (temper's authorization sinks, tasker-core's state-machine rules) stay in their own repositories;
 this repository owns the *shape* of a guard, not every guard.
+
+The register's statuses were taken against temper and tasker-core. temper-contrib, tasker-contrib
+and storyteller are registered consumers whose statuses are unexamined until each adopts the
+baseline (see [`doctrine/rules.md`](doctrine/rules.md)).
 
 The goal this repository serves, its clauses and their coverage, live in the `+tasker-systems/conventions`
 context in Temper.

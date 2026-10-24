@@ -197,10 +197,10 @@ status is a silent no-op, and the compiler can catch it for free.
 
 ## Toolchain
 
-**RUST-TC-1 — float on stable, declare a minimum.** Workspaces build on the current stable
-toolchain (no `rust-toolchain.toml` pin) and declare `rust-version` in `[workspace.package]`, which
-every crate inherits. *Why:* floating keeps both repos on the same compiler without a bump ritual;
-the declared minimum tells a consumer what the published crates need, and gives
+**RUST-TC-1 — float on stable, declare a minimum.** Workspaces build on the current stable toolchain
+(no `rust-toolchain.toml` pin) and declare `rust-version` in `[workspace.package]`, which every
+crate inherits. *Why:* floating keeps every consumer on the same compiler without a bump ritual; the
+declared minimum tells a consumer what the published crates need, and gives
 `clippy::incompatible_msrv` something to check against.
 
 *Known cost, observed:* a new stable release can add or widen lints, and with RUST-LINT-2 that

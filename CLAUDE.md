@@ -8,7 +8,8 @@ from this file.
 
 The shared engineering baseline for tasker-systems repos. See [README.md](README.md). It is not a
 Rust product: nothing here compiles into a binary. Its outputs are doctrine (`doctrine/`) and
-canonical configuration (`rust/`) that consuming repos adopt.
+canonical configuration (`rust/`, `python/`, `typescript/`) that consuming repos adopt. It is
+public; its consumers are listed in [README.md](README.md).
 
 ## Rules for changing it
 
@@ -18,8 +19,9 @@ canonical configuration (`rust/`) that consuming repos adopt.
   Never leave a status blank — an unstated status reads as coverage.
 - **Doctrine states the why beside the rule.** A rule without its reason gets followed to the
   letter and broken in spirit. Keep the reason short, but keep it.
-- **Config in `rust/` must be valid as shipped.** A change to a config file is checked against a
-  scratch workspace (or a consumer) before it lands; say how in the PR.
+- **Canonical config (`rust/`, `python/`, `typescript/`) must be valid as shipped.** A change to a
+  config file is checked against a scratch workspace (or a consumer) before it lands; say how in
+  the PR.
 - **An external guide enters through a ledger.** A rule taken from a published style guide is
   restated in doctrine with our id and our reason, and [`sources/`](sources/) records the guide's
   verdict per section (adopted, adapted, covered, rejected, and why). Read the ledger before

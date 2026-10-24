@@ -55,6 +55,6 @@ multiple-versions = "warn"
 # `*` version requirements fail. Path dependencies inside the workspace are exempt.
 wildcards = "deny"
 allow-wildcard-paths = true
-# Crates neither repository should ever depend on. Each entry has a reason. Empty in v0: the first
-# entries are a ruling (candidates: a second TLS stack, if rustls is ruled the only one).
+# Crates no consuming repository should ever depend on. Each entry has a reason. Empty in v0: the
+# first entries are a ruling (candidates: a second TLS stack, if rustls is ruled the only one).
 deny = []
