@@ -22,6 +22,9 @@ public; its consumers are listed in [README.md](README.md).
 - **Canonical config (`rust/`, `python/`, `typescript/`) must be valid as shipped.** A change to a
   config file is checked against a scratch workspace (or a consumer) before it lands; say how in
   the PR.
+- **A consumer runs what it pinned.** `tools/conventions.py` is executed from consumers'
+  projections, so a change to it changes their verdict only when they move their pin. Change its
+  behaviour together with its bite tests in `tools/tests/`, and keep it standard-library only.
 - **An external guide enters through a ledger.** A rule taken from a published style guide is
   restated in doctrine with our id and our reason, and [`sources/`](sources/) records the guide's
   verdict per section (adopted, adapted, covered, rejected, and why). Read the ledger before

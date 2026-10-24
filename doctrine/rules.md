@@ -220,3 +220,16 @@ section re-verifies them. A change that alters a status updates its row in the s
 | API-JSON-3 | Timestamps RFC 3339, typed `date-time` | partial: 24 of 25 | uncovered: 9 of 19 |
 | API-JSON-4 | Durations are unit-suffixed integers | practiced | practiced |
 | API-JSON-5 | No success envelope; lists say if complete | practiced | practiced |
+
+## Consuming the baseline
+
+| Id | Rule | temper | tasker-core |
+|---|---|---|---|
+| CONS-1 | The pin is a full SHA on the baseline's main, read from the consumer | uncovered: not adopted | uncovered: not adopted |
+| CONS-2 | The projection is never hand-edited; compared with the pin | uncovered: not adopted | uncovered: not adopted |
+| CONS-3 | Adopted config matches the projection, apart from exceptions | uncovered: not adopted | uncovered: not adopted |
+| CONS-4 | Exceptions are local, reasoned and alive | uncovered: not adopted | uncovered: not adopted |
+| CONS-5 | Statuses live in the consumer; a named gate exists | uncovered: not adopted | uncovered: not adopted |
+| CONS-6 | Agents receive the projected skill; entry guidance links it | uncovered: not adopted | uncovered: not adopted |
+| CONS-7 | Lag is reported on every run, and never fails | uncovered: not adopted | uncovered: not adopted |
+| CONS-8 | The checks need nothing an outsider lacks | uncovered: not adopted | uncovered: not adopted |
