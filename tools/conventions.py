@@ -43,6 +43,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import re
 import shutil
@@ -813,7 +814,7 @@ def toml_dumps(data: dict[str, Any]) -> str:
         if isinstance(item, bool):
             return "true" if item else "false"
         if isinstance(item, float):
-            if item != item:
+            if math.isnan(item):
                 return "nan"
             if item in (float("inf"), float("-inf")):
                 return "inf" if item > 0 else "-inf"
