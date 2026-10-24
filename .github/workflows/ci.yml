@@ -1,0 +1,111 @@
+# CI for the conventions baseline itself.
+#
+# This repository's outputs are doctrine and canonical config that five consumers adopt and pin, so
+# its own checks are what the pinned revisions stand on:
+#
+#   tools          the consumer checker (`tools/conventions.py`) and its bite tests (TW-5)
+#   config-valid   every canonical config parses and still refuses what it claims to refuse
+#                  (`tools/check-config-valid.py`; CLAUDE.md "valid as shipped")
+#   repo           the register is complete (every doctrine rule has one row) and links resolve
+#   workflows      actionlint on this file
+#   ci-success     the one required check (CI-2)
+#
+# Every `uses:` is SHA-pinned (SC-GHA-1); tool installs name exact versions (SC-IN-1).
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tools:
+    name: Checker and bite tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Python and git versions
+        run: python3 --version && git --version
+      - name: Bite tests
+        run: python3 -I -m unittest discover -s tools/tests -v
+
+  config-valid:
+    name: Canonical config is valid and bites
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      RUFF_VERSION: 0.16.5
+      BIOME_VERSION: 2.5.15
+      TYPESCRIPT_VERSION: 5.9.3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install ruff (exact version)
+        run: python3 -m pip install --user --quiet "ruff==${RUFF_VERSION}"
+      - name: Rust on current stable (RUST-TC-1)
+        run: rustup update stable --no-self-update && rustup default stable && cargo clippy --version
+      - name: Check every canonical config
+        env:
+          BIOME: npx --yes @biomejs/biome@${{ env.BIOME_VERSION }}
+          TSC: npx --yes -p typescript@${{ env.TYPESCRIPT_VERSION }} tsc
+        run: python3 -I tools/check-config-valid.py
+
+  repo:
+    name: Register and links
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Every doctrine rule has exactly one register row
+        run: python3 -I tools/check-register.py
+      - name: Every relative link resolves (DOC-4)
+        run: python3 -I tools/check-links.py
+
+  workflows:
+    name: Workflows (actionlint)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      ACTIONLINT_VERSION: 1.7.7
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install actionlint (checksum-verified)
+        run: |
+          cd /tmp
+          base="https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}"
+          curl -fsSLO "$base/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl -fsSLO "$base/actionlint_${ACTIONLINT_VERSION}_checksums.txt"
+          grep " actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz$" "actionlint_${ACTIONLINT_VERSION}_checksums.txt" | sha256sum -c -
+          tar -xzf "actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" actionlint
+          sudo install -m 0755 actionlint /usr/local/bin/
+      - name: actionlint
+        run: actionlint
+
+  ci-success:
+    name: CI Success
+    if: always()
+    needs: [tools, config-valid, repo, workflows]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Every job succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "job results: $RESULTS"
+          # Nothing here is path-gated, so anything but success fails the fan-in, a skip included.
+          for r in $RESULTS; do
+            if [ "$r" != "success" ]; then
+              echo "::error::a required job finished '$r'"
+              exit 1
+            fi
+          done

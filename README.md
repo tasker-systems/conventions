@@ -43,6 +43,7 @@ doctrine/        the stance, in prose — why each rule exists
   testing.md       test tiers, ignored tests, CI shape
   tripwires.md     how a repo-specific guard is written, tested and wired
   agent-guidance.md how a consuming repo's agent guidance is shaped
+  consuming.md     how a repo pins, projects and checks the baseline (CONS-*)
 rust/            canonical config a consuming repo adopts
   workspace-lints.toml   the [workspace.lints] table
   clippy.toml            disallowed methods and thresholds
@@ -53,20 +54,30 @@ python/
 typescript/
   biome.json             the shared Biome rule set
   tsconfig.base.json     the strict compiler base
+skill/           the agent skill projected into each consumer, with that consumer's statuses
+tools/
+  conventions.py         `check` (A–E) and `bump`, run by consumers from their projection
+  slots.toml             where a consumer may hold repo-local content in a `superset` file
+  check-config-valid.py  every canonical config parses and still bites
+  check-register.py      every doctrine rule has exactly one register row
+  check-links.py         every relative link resolves
+  tests/                 bite tests for all of the above
 sources/         ledgers of external guides read against the baseline — what was adopted,
                  adapted or rejected, and why (Google's style guides, 2026-10-23)
 ```
 
 Still to come, each its own change: the tripwire harness and the portable tripwires, reusable
-GitHub workflows for the stage-1 gate, the drift check a consuming repo runs against its pinned
-baseline, and the agent skill projected into each repo.
+GitHub workflows for the stage-1 gate, and generating the register's per-consumer columns from
+consumers' `status.toml`.
 
 ## Adopting
 
-Not yet mechanised. Until the drift check exists, a consuming repo adopts by copying the files in
-`rust/`, `python/` and `typescript/` and recording the baseline commit it copied from. Once it
-exists, divergence from the pinned baseline fails that repo's CI — which is the point: "the same in
-every repo" should be a checked invariant, not a habit.
+A consumer pins one revision of this repository and carries a projection of it under
+`.conventions/`. A checker, run from that projection inside the consumer's required CI check, fails
+when the consumer's adopted config, projection or skill departs from the pin without a recorded
+exception, and reports how far the pin lags `main`. The contract, the four comparison modes and the
+commands are in [`doctrine/consuming.md`](doctrine/consuming.md). "The same in every repo" is then a
+checked invariant, not a habit.
 
 ## Scope
 
