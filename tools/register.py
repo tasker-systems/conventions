@@ -16,7 +16,7 @@ without anyone looking; the fix is `generate` and a reviewed PR.
 A consumer's column is:
   - generated, when its status.toml can be read (an unlisted rule reads `unexamined`);
   - hand-taken, kept as written, when it has not adopted but rules.md already holds a column for it
-    (temper and tasker-core, until they adopt);
+    (none today: temper and tasker-core held one until they adopted);
   - absent, when it has not adopted and has no column, or cannot be read: a private consumer
     without CONSUMERS_READ_TOKEN. The consumers block above the tables names which and why.
 
