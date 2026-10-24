@@ -426,6 +426,8 @@ class Witness(Base):
             "Cargo.toml",
             "[workspace]\nmembers = []\n\n" + self.f.canonical("rust/workspace-lints.toml"),
         )
+        self.f.adopt("rust/audit.toml", ".cargo/audit.toml", "superset")
+        self.f.write(".cargo/audit.toml", '[advisories]\nignore = ["RUSTSEC-2023-0071"]\n')
         self.f.adopt("typescript/tsconfig.base.json", "app/tsconfig.json", "extends")
         self.f.write(
             "app/tsconfig.json",
@@ -460,6 +462,7 @@ class Witness(Base):
             "clippy.toml adds a key the baseline does not hold",
             "Cargo.toml overrides canonical workspace.lints.rust.unsafe_code",
             "deny.toml overrides canonical graph.all-features",
+            ".cargo/audit.toml adds a key the baseline does not hold",
             "app/tsconfig.json stops referencing the projection",
             "a reasoned exception covers the divergence it records stays green",
             "AGENTS.md stops linking the skill",
