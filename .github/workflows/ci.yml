@@ -3,7 +3,10 @@
 # This repository's outputs are doctrine and canonical config that five consumers adopt and pin, so
 # its own checks are what the pinned revisions stand on:
 #
-#   tools          the consumer checker (`tools/conventions.py`) and its bite tests (TW-5)
+#   tools          the consumer checker (`tools/conventions.py`), the register generator
+#                  (`tools/register.py`) and their bite tests (TW-5). The register is compared
+#                  with the consumers by the scheduled register.yml, not here: a pull request
+#                  never holds the token a private consumer needs
 #   config-valid   every canonical config parses and still refuses what it claims to refuse
 #                  (`tools/check-config-valid.py`; CLAUDE.md "valid as shipped")
 #   repo           the register is complete (every doctrine rule has one row) and links resolve

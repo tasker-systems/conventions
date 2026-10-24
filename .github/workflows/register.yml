@@ -1,0 +1,41 @@
+# The register against its consumers (doctrine/consuming.md, CONS-5; tools/register.py).
+#
+# Reads each registered consumer's `.conventions/status.toml` at its default branch and fails, naming
+# each cell, where doctrine/rules.md disagrees. The fix is `python3 -I tools/register.py generate`
+# in a reviewed PR. The run also lists each consumer's pin and lag in its summary.
+#
+# Schedule and manual dispatch only, never pull requests: the job holds CONSUMERS_READ_TOKEN (read
+# access to private consumers' contents), and no fork's code may run beside it. Without the secret,
+# private consumers are named unread rather than guessed. It only reads: the token is never
+# written to, and the job opens no PR (a PR opened with GITHUB_TOKEN would not trigger the CI its
+# required check needs).
+
+name: Register
+
+on:
+  schedule:
+    - cron: '41 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: register
+  cancel-in-progress: false
+
+jobs:
+  register:
+    name: Register agrees with its consumers
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history, so each consumer's lag behind main can be counted.
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Every generated column agrees with its consumer
+        env:
+          CONSUMERS_READ_TOKEN: ${{ secrets.CONSUMERS_READ_TOKEN }}
+        run: python3 -I tools/register.py check

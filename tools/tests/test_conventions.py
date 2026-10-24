@@ -350,11 +350,53 @@ class Bump(Base):
         result = self.f.run("bump", "--revision", "main")
         self.assert_passes(result)
         self.assertIn("rule added: NEW-1", result.stdout)
-        self.assert_passes(self.f.check())
 
     def test_bump_refuses_a_revision_not_on_main(self) -> None:
         result = self.f.run("bump", "--revision", "0" * 40)
         self.assertNotEqual(result.returncode, 0)
+
+
+class CheckF(Base):
+    """A pin move that changes a rule is one act: the statuses are reviewed in the same commit."""
+
+    def move_main(self, rules_edit: str) -> str:
+        rules = self.f.baseline / "doctrine/rules.md"
+        text = rules.read_text()
+        if rules_edit == "add-rule":
+            text += "| NEW-1 | A new rule | uncovered | uncovered |\n"
+        elif rules_edit == "status-cell":
+            # A consumer column moves (it is generated); the rule itself does not.
+            text = text.replace(
+                "| RUST-FMT-1 | rustfmt defaults, checked in CI | gated:",
+                "| RUST-FMT-1 | rustfmt defaults, checked in CI | partial: moved; was gated:",
+            )
+        rules.write_text(text)
+        git(self.f.baseline, "commit", "-q", "-am", rules_edit)
+        return git(self.f.baseline, "rev-parse", "HEAD")
+
+    def test_adoption_is_reviewed_at_its_pin(self) -> None:
+        self.assert_passes(self.f.check())
+
+    def test_rule_change_fails_until_the_statuses_are_reviewed(self) -> None:
+        sha = self.move_main("add-rule")
+        self.assert_passes(self.f.run("bump", "--revision", "main"))
+        self.assert_fails(self.f.check(), f"but the pin is {sha}")
+        status = self.f.consumer / ".conventions/status.toml"
+        status.write_text(status.read_text().replace(self.f.sha, sha))
+        self.assert_passes(self.f.check())
+
+    def test_a_moved_status_column_is_not_a_rule_change(self) -> None:
+        self.move_main("status-cell")
+        result = self.f.run("bump", "--revision", "main")
+        self.assertIn("no rule was added, removed or changed", result.stdout)
+        self.assert_passes(self.f.check())
+
+    def test_missing_reviewed_at_fails(self) -> None:
+        status = self.f.consumer / ".conventions/status.toml"
+        status.write_text(
+            "".join(x for x in status.read_text().splitlines(True) if "reviewed_at =" not in x)
+        )
+        self.assert_fails(self.f.check("--offline"), "status.toml has no `reviewed_at`")
 
 
 if __name__ == "__main__":

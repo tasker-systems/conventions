@@ -1,0 +1,31 @@
+# The registered consumers (README.md), in the register's column order. `tools/register.py` reads
+# each one's `.conventions/status.toml` at `branch` to generate its column in doctrine/rules.md.
+#
+# A private consumer is read with the CONSUMERS_READ_TOKEN secret, which only the scheduled
+# register job holds. Without it, its column is named unread rather than guessed.
+
+[[consumer]]
+name = "temper"
+repo = "tasker-systems/temper"
+branch = "main"
+
+[[consumer]]
+name = "tasker-core"
+repo = "tasker-systems/tasker-core"
+branch = "main"
+
+[[consumer]]
+name = "temper-contrib"
+repo = "tasker-systems/temper-contrib"
+branch = "main"
+
+[[consumer]]
+name = "tasker-contrib"
+repo = "tasker-systems/tasker-contrib"
+branch = "main"
+
+[[consumer]]
+name = "storyteller"
+repo = "tasker-systems/storyteller"
+branch = "main"
+private = true
