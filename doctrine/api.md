@@ -7,8 +7,8 @@ status per repo is in [`rules.md`](rules.md); the Google JSON style guide ledger
 [`../sources/google/docs-and-json.md`](../sources/google/docs-and-json.md).
 
 Google's JSON guide predates OpenAPI and serves a different API culture (camelCase, a `data`
-envelope, `apiVersion`/`kind` fields). Both repositories already agree on a different, consistent
-style; these rules write that style down.
+envelope, `apiVersion`/`kind` fields). temper and tasker-core already agree on a different,
+consistent style; these rules write that style down.
 
 **API-JSON-1 — snake_case names, snake_case enum values, SCREAMING_SNAKE error codes.** Property
 names and enum values on the wire are snake_case (`#[serde(rename_all = "snake_case")]`); the

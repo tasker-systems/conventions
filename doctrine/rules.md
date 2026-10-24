@@ -14,6 +14,13 @@ says why it is not.
 | **convention: …** | Deliberately not gated, with the reason |
 | **uncovered** | Not followed, or not checked. A known hole |
 
+**Registered consumers.** temper and tasker-core have a column below. temper-contrib, tasker-contrib
+and storyteller are also registered consumers (2026-10-23); every rule's status for them is
+**unexamined** until each adopts the baseline, and is taken then from a fresh reading of that repo,
+not copied from these columns. Their columns are not added by hand: per-consumer statuses are moving
+into each consumer, and the columns here will be generated from them. For tasker-contrib the
+baseline covers its own surfaces only; its templates and example apps are user-owned.
+
 Rows for the Google style-guide integration (RUST-LINT-5 onward, and the Python, TypeScript,
 Shell, Markdown and API sections) were taken on 2026-10-23 against `temper@d530840` and
 `tasker-core@3888d42`; their counts come from clippy, ruff, Biome, tsc and ShellCheck runs as

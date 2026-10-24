@@ -66,6 +66,6 @@ needs, commit. No network calls to other services while a transaction is held op
 
 ## Not specified in v0
 
-- Cadence, rate and volume limits (rate limiting, load shedding): open. Neither repo states a shared
+- Cadence, rate and volume limits (rate limiting, load shedding): open. No consumer states a shared
   rule yet, and these are exactly the axes a register should not claim to have closed.
 - Choice of runtime: tokio is used by both and assumed; no rule states it.

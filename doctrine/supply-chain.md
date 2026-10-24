@@ -27,12 +27,12 @@ a copyleft one, is a decision before it is added.
 
 **SC-DENY-3 — bans.** `cargo deny check bans` runs and gates on:
 - wildcard (`*`) version requirements;
-- an explicit list of crates neither repo should ever depend on.
+- an explicit list of crates no consumer should ever depend on.
 
 Duplicate versions (`multiple-versions`) are reported as warnings only. *Why:* duplicates are
-pervasive in both trees today, and gating on them would block every dependency bump. A warning keeps
-them visible; promoting `multiple-versions` to `deny`, with a reviewed `skip` list as the ratchet,
-is a later ruling.
+pervasive in temper's and tasker-core's trees today, and gating on them would block every dependency
+bump. A warning keeps them visible; promoting `multiple-versions` to `deny`, with a reviewed `skip`
+list as the ratchet, is a later ruling.
 
 ## GitHub Actions
 
