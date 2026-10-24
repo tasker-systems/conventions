@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import tomllib
 import unittest
 from pathlib import Path
 
@@ -196,7 +197,7 @@ class CheckA(Base):
         self.f.adopt("python/ruff.toml", "ruff.toml", "exact")
         self.f.write("ruff.toml", "# our comment\n" + self.f.canonical("python/ruff.toml"))
         self.assert_passes(self.f.check("--offline"))
-        self.f.write("ruff.toml", self.f.canonical("python/ruff.toml").replace("py310", "py39"))
+        self.f.write("ruff.toml", self.f.canonical("python/ruff.toml").replace("py311", "py39"))
         self.assert_fails(self.f.check("--offline"), "ruff.toml: target-version")
 
     def test_list_order_does_not_matter(self) -> None:
@@ -209,7 +210,7 @@ class CheckA(Base):
 
     def test_exception_covers_a_difference_and_must_have_a_reason(self) -> None:
         self.f.adopt("python/ruff.toml", "ruff.toml", "exact")
-        self.f.write("ruff.toml", self.f.canonical("python/ruff.toml").replace("py310", "py39"))
+        self.f.write("ruff.toml", self.f.canonical("python/ruff.toml").replace("py311", "py39"))
         self.f.write(
             ".conventions/exceptions.toml",
             '[[exception]]\npath = "ruff.toml"\nkey = "target-version"\nreason = "py39 floor"\n',
@@ -397,6 +398,126 @@ class CheckF(Base):
             "".join(x for x in status.read_text().splitlines(True) if "reviewed_at =" not in x)
         )
         self.assert_fails(self.f.check("--offline"), "status.toml has no `reviewed_at`")
+
+
+class Witness(Base):
+    """`witness` holds on a well-formed consumer, and goes red when a check it witnesses is off."""
+
+    WORKFLOW = (
+        "name: CI\non: pull_request\njobs:\n  conventions:\n    runs-on: x\n    steps:\n"
+        "      - run: python3 -I .conventions/baseline/tools/conventions.py check\n"
+    )
+
+    def setUp(self) -> None:
+        super().setUp()
+        # The pin needs a parent on main, for the lag case.
+        (self.f.baseline / "doctrine/next.md").write_text("next\n")
+        git(self.f.baseline, "add", "-A")
+        git(self.f.baseline, "commit", "-q", "-m", "next")
+        self.f.adopt("python/ruff.toml", "ruff.toml", "extends")
+        self.f.write("ruff.toml", 'extend = ".conventions/baseline/python/ruff.toml"\n')
+        self.f.adopt("rust/clippy.toml", "clippy.toml", "exact")
+        self.f.write("clippy.toml", self.f.canonical("rust/clippy.toml"))
+        self.f.adopt("rust/deny.toml", "deny.toml", "superset")
+        self.f.write("deny.toml", self.f.canonical("rust/deny.toml"))
+        self.f.adopt("rust/workspace-lints.toml", "Cargo.toml", "table", table="workspace.lints",
+                     canonical_table="workspace.lints")  # fmt: skip
+        self.f.write(
+            "Cargo.toml",
+            "[workspace]\nmembers = []\n\n" + self.f.canonical("rust/workspace-lints.toml"),
+        )
+        self.f.adopt("typescript/tsconfig.base.json", "app/tsconfig.json", "extends")
+        self.f.write(
+            "app/tsconfig.json",
+            '{ "extends": "../.conventions/baseline/typescript/tsconfig.base.json" }\n',
+        )
+        self.f.write(".github/workflows/ci.yml", self.WORKFLOW)
+        self.f.write(".conventions/status.toml", '[rules]\n"RUST-FMT-1" = "uncovered"\n')
+        self.assert_passes(self.f.run("bump", "--revision", "main"))
+        self.assert_passes(self.f.check())
+
+    def witness(self, tool: Path = TOOL) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [sys.executable, "-I", str(tool), "witness", "--root", str(self.f.consumer),
+             "--baseline-repo", str(self.f.baseline)],
+            capture_output=True, text=True, check=False,
+        )  # fmt: skip
+
+    def mutated(self, old: str, new: str) -> Path:
+        text = TOOL.read_text()
+        self.assertEqual(text.count(old), 1, old)
+        path = self.f.baseline.parent / "mutated" / "conventions.py"
+        path.parent.mkdir()
+        path.write_text(text.replace(old, new))
+        return path
+
+    def test_witness_holds_on_a_well_formed_consumer(self) -> None:
+        result = self.witness()
+        self.assert_passes(result)
+        self.assertIn("cases held", result.stdout)
+        for case in (
+            "ruff.toml overrides canonical",
+            "clippy.toml adds a key the baseline does not hold",
+            "Cargo.toml overrides canonical workspace.lints.rust.unsafe_code",
+            "deny.toml overrides canonical graph.all-features",
+            "app/tsconfig.json stops referencing the projection",
+            "a reasoned exception covers the divergence it records stays green",
+            "AGENTS.md stops linking the skill",
+            "a pin behind the baseline's main is named as lag",
+        ):
+            self.assertIn(case, result.stdout)
+
+    def test_witness_fails_when_check_f_is_disabled(self) -> None:
+        tool = self.mutated(
+            "    reviewed = load_reviewed_at(consumer.root)\n",
+            "    return\n    reviewed = load_reviewed_at(consumer.root)\n",
+        )
+        result = self.witness(tool)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("reviewed against another revision than the pin was accepted", result.stderr)
+        self.assertIn("name no revision they were reviewed against was accepted", result.stderr)
+
+    def test_witness_fails_when_the_exception_reason_rule_is_disabled(self) -> None:
+        tool = self.mutated(
+            '            report.fail("A", f"exceptions.toml exception[{index}] has no reason")\n',
+            "            pass\n",
+        )
+        result = self.witness(tool)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("an exception carries no reason was accepted", result.stderr)
+
+    def test_witness_refuses_a_secret_in_the_conventions_job(self) -> None:
+        self.f.write(
+            ".github/workflows/ci.yml",
+            self.WORKFLOW + "        env:\n          T: ${{ secrets.READ }}\n",
+        )
+        result = self.witness()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(
+            ".github/workflows/ci.yml#conventions runs the check and references no", result.stderr
+        )
+
+    def test_witness_refuses_a_consumer_whose_ci_never_runs_the_check(self) -> None:
+        self.f.write(".github/workflows/ci.yml", self.WORKFLOW.replace(" check", " --help"))
+        result = self.witness()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("no workflow job runs `conventions.py check`", result.stderr)
+
+
+class TomlDump(unittest.TestCase):
+    def test_round_trips_what_tomllib_reads(self) -> None:
+        sys.path.insert(0, str(TOOL.parent))
+        try:
+            import conventions
+        finally:
+            sys.path.pop(0)
+
+        for rel in ("rust/deny.toml", "rust/clippy.toml", "rust/workspace-lints.toml",
+                    "python/ruff.toml", "tools/slots.toml"):  # fmt: skip
+            data = tomllib.loads((REPO / rel).read_text())
+            self.assertEqual(tomllib.loads(conventions.toml_dumps(data)), data, rel)
+        odd = {"a": {"b.c": 'q"uote\u00e9\x7f', "e": [], "f": {}, "g": [{"h": 1.5}]}}
+        self.assertEqual(tomllib.loads(conventions.toml_dumps(odd)), odd)
 
 
 if __name__ == "__main__":

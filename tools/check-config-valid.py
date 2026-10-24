@@ -115,10 +115,10 @@ def python(tmp: Path) -> None:
         ok=False,
         needle="E722",
     )
-    # The tools need Python 3.11 (tomllib); the canonical floor is py310 (PY-VER-1), so they are
-    # linted at their own floor rather than raising the canonical one.
+    # The tools are linted at the canonical floor itself (PY-VER-1): they need tomllib, which is
+    # why the floor is 3.11.
     tools = [str(p) for p in sorted((ROOT / "tools").rglob("*.py"))]
-    lint_tools = [*RUFF, "check", "--no-cache", "--config", cfg, "--target-version", "py311"]
+    lint_tools = [*RUFF, "check", "--no-cache", "--config", cfg]
     expect("python: the baseline's own tools pass", run([*lint_tools, *tools], ROOT), ok=True)
     fmt_tools = [*RUFF, "format", "--check", "--config", cfg, *tools]
     expect("python: the baseline's own tools are formatted", run(fmt_tools, ROOT), ok=True)
