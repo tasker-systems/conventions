@@ -242,3 +242,4 @@ do not enforce the rule (RUST-LINT-1, RUST-LINT-2, RUST-TYPE-1, TS-TOOL-1).
 | CONS-6 | Agents receive the projected skill; entry guidance links it | gated: .github/workflows/quality-gate.yml#conventions | gated: .github/workflows/ci.yml#conventions | gated: .github/workflows/ci.yml#conventions |
 | CONS-7 | Lag is reported on every run, and never fails | gated: .github/workflows/quality-gate.yml#conventions | gated: .github/workflows/ci.yml#conventions | gated: .github/workflows/ci.yml#conventions |
 | CONS-8 | The checks need nothing an outsider lacks | gated: .github/workflows/quality-gate.yml#conventions | gated: .github/workflows/ci.yml#conventions | practiced |
+| CONS-9 | The pin moves itself; a quiet move merges on CI, a loud one waits | unexamined | unexamined | unexamined |
