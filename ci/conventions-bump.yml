@@ -72,10 +72,10 @@ jobs:
           set -euo pipefail
           # `--head` matches the branch name only, so a fork's PR from its own `conventions/bump`
           # would match too. Only this repository's own branch is the bump PR.
-          own='[.[] | select(.isCrossRepository == false and .headRepositoryOwner.login == $owner)]'
           open=$(gh pr list --head "$BRANCH" --state open \
             --json number,isCrossRepository,headRepositoryOwner \
-            | jq -r --arg owner "$OWNER" "${own} | .[0].number // empty")
+            --jq '[.[] | select(.isCrossRepository == false
+                    and .headRepositoryOwner.login == env.OWNER)][0].number // empty')
           if [ "$KIND" = none ]; then
             if [ -n "$open" ]; then
               gh pr close "$open" --delete-branch \

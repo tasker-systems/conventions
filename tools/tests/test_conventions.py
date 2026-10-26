@@ -489,7 +489,7 @@ class CanonicalWorkflow(unittest.TestCase):
         lookup = [line for line in text.splitlines() if "gh pr list" in line]
         self.assertEqual(len(lookup), 1, lookup)
         self.assertIn("isCrossRepository == false", text)
-        self.assertIn(".headRepositoryOwner.login == $owner", text)
+        self.assertIn(".headRepositoryOwner.login == env.OWNER", text)
         self.assertIn("core.hooksPath=/dev/null commit", text)
 
     def test_merge_without_a_person_is_only_for_a_quiet_move(self) -> None:
