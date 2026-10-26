@@ -54,9 +54,11 @@ python/
 typescript/
   biome.json             the shared Biome rule set
   tsconfig.base.json     the strict compiler base
+ci/
+  conventions-bump.yml   the workflow that moves a consumer's pin (CONS-9), adopted `exact`
 skill/           the agent skill projected into each consumer, with that consumer's statuses
 tools/
-  conventions.py         `check` (A–F) and `bump`, run by consumers from their projection
+  conventions.py         `check` (A–F), `bump`, `witness` and `propose`, run from the projection
   register.py            generates rules.md's consumer columns from consumers' status.toml
   consumers.toml         the registered consumers that register.py reads
   slots.toml             where a consumer may hold repo-local content in a `superset` file

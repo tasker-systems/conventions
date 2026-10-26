@@ -26,6 +26,7 @@ PROJECTED = (
     "rust",
     "python",
     "typescript",
+    "ci",
     "skill",
     "tools/conventions.py",
     "tools/slots.toml",
@@ -355,6 +356,126 @@ class Bump(Base):
     def test_bump_refuses_a_revision_not_on_main(self) -> None:
         result = self.f.run("bump", "--revision", "0" * 40)
         self.assertNotEqual(result.returncode, 0)
+
+
+class Propose(Base):
+    """CONS-9: `propose` moves the pin to main and classifies the move for the bump workflow."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.body = Path(self.f._tmp.name) / "body.md"
+
+    def commit(self, rel: str, text: str, message: str) -> str:
+        path = self.f.baseline / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+        git(self.f.baseline, "add", "-A")
+        git(self.f.baseline, "commit", "-q", "-m", message)
+        return git(self.f.baseline, "rev-parse", "HEAD")
+
+    def propose(self) -> dict[str, str]:
+        result = self.f.run("propose", "--body-file", str(self.body))
+        self.assert_passes(result)
+        lines = result.stdout.splitlines()
+        # Every stdout line is a `$GITHUB_OUTPUT` line; everything else goes to stderr.
+        self.assertTrue(all("=" in line for line in lines), result.stdout)
+        return dict(line.split("=", 1) for line in lines)
+
+    def test_no_move_is_none_and_writes_no_body(self) -> None:
+        out = self.propose()
+        self.assertEqual(out["class"], "none")
+        self.assertEqual(out["revision"], self.f.sha)
+        self.assertFalse(self.body.exists())
+
+    def test_a_consumer_that_has_not_adopted_is_none(self) -> None:
+        shutil.rmtree(self.f.consumer / ".conventions")
+        self.assertEqual(self.propose(), {"class": "none"})
+
+    def test_doctrine_text_only_is_quiet_and_reviewed(self) -> None:
+        sha = self.commit("README.md", self.f.canonical("README.md") + "\nMore.\n", "readme")
+        out = self.propose()
+        self.assertEqual(
+            out,
+            {
+                "class": "quiet",
+                "revision": sha,
+                "previous": self.f.sha,
+                "skill": SKILL,
+            },
+        )
+        body = self.body.read_text()
+        self.assertIn("**Quiet.**", body)
+        self.assertIn("`README.md`", body)
+        self.assert_passes(self.f.check())
+
+    def test_a_moved_rule_is_loud_and_check_f_holds_it(self) -> None:
+        rules = self.f.canonical("doctrine/rules.md") + "| NEW-1 | A new rule | uncovered |\n"
+        self.commit("doctrine/rules.md", rules, "add a rule")
+        self.assertEqual(self.propose()["class"], "loud")
+        body = self.body.read_text()
+        self.assertIn("Rule added: `NEW-1`", body)
+        self.assertIn("Check F fails until you do", body)
+        self.assert_fails(self.f.check(), "reviewed_at")
+
+    def test_a_canonical_config_change_with_no_rule_change_is_loud(self) -> None:
+        # The temper-contrib#93 case: ruff's target moved and no rule row did.
+        ruff = self.f.canonical("python/ruff.toml").replace("py311", "py312")
+        self.commit("python/ruff.toml", ruff, "raise the floor")
+        self.assertEqual(self.propose()["class"], "loud")
+        body = self.body.read_text()
+        self.assertIn("Canonical file changed: `python/ruff.toml` (+1 -1)", body)
+        self.assertNotIn("Check F", body)
+
+    def test_an_unadopted_canonical_file_still_makes_it_loud(self) -> None:
+        workflow = self.f.canonical("ci/conventions-bump.yml") + "# a change\n"
+        self.commit("ci/conventions-bump.yml", workflow, "workflow")
+        self.assertEqual(self.propose()["class"], "loud")
+        self.assertIn("`ci/conventions-bump.yml` (+1 -0)", self.body.read_text())
+
+
+class AdoptedWorkflow(Base):
+    def test_the_adopted_workflow_is_exact(self) -> None:
+        path = ".github/workflows/conventions-bump.yml"
+        self.f.write(path, self.f.canonical("ci/conventions-bump.yml"))
+        self.f.adopt("ci/conventions-bump.yml", path, "exact")
+        self.assert_passes(self.f.check())
+        self.f.append(path, "  pull_request:\n")
+        self.assert_fails(self.f.check(), "content differs")
+
+
+class ProjectionSet(Base):
+    def test_a_path_the_new_revision_projects_is_projected_by_the_old_tool(self) -> None:
+        tool = self.f.baseline / "tools/conventions.py"
+        tool.write_text(tool.read_text().replace('    "ci",\n', '    "ci",\n    "extra",\n', 1))
+        (self.f.baseline / "extra").mkdir()
+        (self.f.baseline / "extra/new.txt").write_text("projected from the new revision\n")
+        git(self.f.baseline, "add", "-A")
+        git(self.f.baseline, "commit", "-q", "-m", "project extra/")
+        # The running tool's own PROJECTED has no `extra`: the set must come from the revision.
+        self.assert_passes(self.f.run("bump", "--revision", "main"))
+        self.assertTrue((self.f.consumer / ".conventions/baseline/extra/new.txt").is_file())
+        self.assert_passes(self.f.check())
+
+
+class CanonicalWorkflow(unittest.TestCase):
+    """CONS-9: the adopted bump workflow never meets a pull request's code, and runs `propose`."""
+
+    def test_it_runs_on_schedule_and_dispatch_only(self) -> None:
+        text = (REPO / "ci/conventions-bump.yml").read_text()
+        head = text[text.index("\non:\n") : text.index("\npermissions:")]
+        self.assertIn("schedule:", head)
+        self.assertIn("workflow_dispatch:", head)
+        self.assertNotIn("pull_request", head)
+        self.assertIn("conventions.py propose", text)
+        self.assertNotIn("conventions.py check", text)
+
+    def test_merge_without_a_person_is_only_for_a_quiet_move(self) -> None:
+        text = (REPO / "ci/conventions-bump.yml").read_text()
+        quiet = text.index('if [ "$KIND" = quiet ]; then')
+        otherwise = text.index("else", quiet)
+        auto = [i for i in range(len(text)) if text.startswith("--auto", i)]
+        self.assertTrue(auto)
+        self.assertTrue(all(quiet < i < otherwise for i in auto), "--auto outside the quiet branch")
 
 
 class CheckF(Base):

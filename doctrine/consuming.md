@@ -109,9 +109,28 @@ runs. They use no secret: the baseline is public, and the only network read is t
 CONS-2. *Why:* a public repository's CI must not pass or fail depending on whether the person who
 triggered it can see something private.
 
+**CONS-9 — the pin moves itself; a quiet move merges on CI, a loud one waits for a person.** Each
+consumer adopts the canonical [`../ci/conventions-bump.yml`](../ci/conventions-bump.yml) in `exact`
+mode at `.github/workflows/conventions-bump.yml`. Each day it runs `conventions.py propose`, which
+moves the pin to `main` and classifies the move:
+
+| Class | When | The bump PR |
+|---|---|---|
+| `none` | the pin is already `main` | none is opened, and an open one is closed |
+| `quiet` | no rule was added, removed or changed, and nothing under `rust/`, `python/`, `typescript/` or `ci/` changed | merges on green CI |
+| `loud` | anything else | waits for a person; check F (a moved rule) or A (a changed canonical file) is red until they act |
+
+A canonical file the consumer has not adopted still makes a move loud, because adopting it later
+would bring in an unreviewed change. The workflow holds the one credential in the scheme, a GitHub
+App token for its own repository, and runs on a schedule and on manual dispatch only, never on a
+pull request. *Why:* a move that changes nothing a consumer enforces or tells its agents needs no
+reviewer, only its CI, and asking a person to approve one is how pins drifted. A move that does
+change something is still one reviewed act in one repository (CONS-5).
+
 ## Not specified
 
-- **How often to move the pin.** CONS-7 makes lag visible but sets no maximum.
+- **How far a pin may lag.** CONS-7 makes lag visible and sets no maximum. CONS-9 keeps it short
+  in practice, not by rule.
 - **Versioning the baseline beyond commits.** Tags, if ever added, are labels. The pin is always a
   SHA.
 - **Template and example code a consumer ships for users to copy** (tasker-contrib). It is

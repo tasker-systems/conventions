@@ -92,6 +92,8 @@ jobs:
           sudo install -m 0755 actionlint /usr/local/bin/
       - name: actionlint
         run: actionlint
+      - name: actionlint on the canonical workflows consumers adopt (CONS-9)
+        run: actionlint ci/*.yml
 
   ci-success:
     name: CI Success
