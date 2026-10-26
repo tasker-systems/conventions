@@ -6,7 +6,8 @@
 #
 # Each day, `conventions.py propose` moves the pin to the baseline's main and classifies the move:
 #   none   the pin is already main's: any open bump PR is closed
-#   quiet  no rule moved and no canonical config changed: the bump PR merges on green CI
+#   quiet  no rule moved, and no canonical config, projected tool or skill changed: the bump PR
+#          merges on green CI
 #   loud   anything else: the bump PR waits for a person, and check F (or A) is red until then
 # One branch, `conventions/bump`, holds the one open bump PR; each run replaces its commit.
 #
@@ -66,9 +67,15 @@ jobs:
           PREVIOUS: ${{ steps.propose.outputs.previous }}
           SKILL: ${{ steps.propose.outputs.skill }}
           BRANCH: conventions/bump
+          OWNER: ${{ github.repository_owner }}
         run: |
           set -euo pipefail
-          open=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          # `--head` matches the branch name only, so a fork's PR from its own `conventions/bump`
+          # would match too. Only this repository's own branch is the bump PR.
+          own='[.[] | select(.isCrossRepository == false and .headRepositoryOwner.login == $owner)]'
+          open=$(gh pr list --head "$BRANCH" --state open \
+            --json number,isCrossRepository,headRepositoryOwner \
+            | jq -r --arg owner "$OWNER" "${own} | .[0].number // empty")
           if [ "$KIND" = none ]; then
             if [ -n "$open" ]; then
               gh pr close "$open" --delete-branch \
@@ -82,7 +89,8 @@ jobs:
           git config user.email "${id}+${bot}@users.noreply.github.com"
           git switch -c "$BRANCH"
           git add -A -- .conventions "$SKILL"
-          git commit -q -m "chore(conventions): move the pin to ${REVISION:0:12} (${KIND})" \
+          # No repository-controlled hook runs in the step that holds the token.
+          git -c core.hooksPath=/dev/null commit -q -m "chore(conventions): move the pin to ${REVISION:0:12} (${KIND})" \
             -m "From ${PREVIOUS} to ${REVISION}, classified ${KIND} by conventions.py propose (CONS-9)."
           remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           # An open PR whose tree is already this one is left alone, so a quiet day re-runs no CI.
@@ -96,8 +104,8 @@ jobs:
           if [ -n "$open" ]; then
             gh pr edit "$open" --title "$title" --body-file "$RUNNER_TEMP/body.md"
           else
-            gh pr create --head "$BRANCH" --title "$title" --body-file "$RUNNER_TEMP/body.md"
-            open=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')
+            url=$(gh pr create --head "$BRANCH" --title "$title" --body-file "$RUNNER_TEMP/body.md")
+            open=${url##*/}
           fi
           if [ "$KIND" = quiet ]; then
             # A merge-queue branch takes no method; any other branch needs one.

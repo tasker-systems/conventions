@@ -35,8 +35,8 @@ seed that finds nothing to edit fails rather than passing vacuously.
 pin, classifies the move, writes a pull-request body to `--body-file`, and prints `class=`,
 `revision=`, `previous=` and `skill=` lines for `$GITHUB_OUTPUT`, and nothing else on stdout. The
 class is `none` (the pin is already main's, or this repository has not adopted), `quiet` (no rule
-was added, removed or changed, and no canonical config under `rust/`, `python/`, `typescript/` or
-`ci/` changed) or `loud` (anything else). Only a quiet move may merge without a person.
+was added, removed or changed, and nothing changed under `rust/`, `python/`, `typescript/`, `ci/`,
+`tools/` or `skill/`) or `loud` (anything else). Only a quiet move may merge without a person.
 
 NOT CHECKED, by design:
   - that a `gated:` gate actually fails on a violation (that is each consumer's bite test, TW-5);
@@ -826,6 +826,10 @@ def bump(root: Path, revision: str, url: str | None, init_name: str | None) -> i
 # A change under any of these is a change to what a consumer enforces, adopted here or not: a file
 # adopted later would carry an unreviewed change in with it.
 CANONICAL_DIRS = ("rust/", "python/", "typescript/", "ci/")
+# The projected tool is code the consumer's CI and bump workflow execute, and the skill is what its
+# agents are told to follow: a change to either is reviewed, never merged on CI alone.
+CONTROL_PATHS = ("tools/", "skill/")
+LOUD_PATHS = CANONICAL_DIRS + CONTROL_PATHS
 
 
 def changed_paths(before: dict[str, bytes], after: dict[str, bytes]) -> list[str]:
@@ -837,8 +841,8 @@ def changed_paths(before: dict[str, bytes], after: dict[str, bytes]) -> list[str
 def classify(move: Move) -> str:
     if move.sha == move.previous:
         return "none"
-    canonical = [p for p in changed_paths(move.before, move.after) if p.startswith(CANONICAL_DIRS)]
-    return "loud" if move.rules or canonical else "quiet"
+    loud = [p for p in changed_paths(move.before, move.after) if p.startswith(LOUD_PATHS)]
+    return "loud" if move.rules or loud else "quiet"
 
 
 def line_stat(old: bytes | None, new: bytes | None) -> str:
@@ -864,7 +868,8 @@ def proposal_body(move: Move, kind: str, url: str) -> str:
     short, previous = move.sha[:12], move.previous[:12]
     changed = changed_paths(move.before, move.after)
     canonical = [p for p in changed if p.startswith(CANONICAL_DIRS)]
-    others = [p for p in changed if not p.startswith(CANONICAL_DIRS)]
+    control = [p for p in changed if p.startswith(CONTROL_PATHS)]
+    others = [p for p in changed if not p.startswith(LOUD_PATHS)]
     web = url.removesuffix(".git")
     lines = [
         f"Moves this repository's pin on the tasker-systems conventions baseline from "
@@ -875,8 +880,8 @@ def proposal_body(move: Move, kind: str, url: str) -> str:
     ]
     if kind == "quiet":
         lines += [
-            "**Quiet.** No rule was added, removed or changed, and no canonical config changed, so "
-            "nothing this repository enforces or tells its agents moves. It merges on green CI.",
+            "**Quiet.** No rule was added, removed or changed, and no canonical config, projected "
+            "tool or skill changed. It merges on green CI.",
         ]
     else:
         lines += ["**Loud: this waits for a person.**", ""]
@@ -886,6 +891,12 @@ def proposal_body(move: Move, kind: str, url: str) -> str:
             lines.append(
                 f"- Canonical file changed: `{path}` "
                 f"({line_stat(move.before.get(path), move.after.get(path))})"
+            )
+        for path in control:
+            lines.append(
+                f"- Tool or skill changed: `{path}` "
+                f"({line_stat(move.before.get(path), move.after.get(path))}). Read it: CI runs this "
+                "code, and agents follow this skill."
             )
         lines += ["", "To land it, in this branch:"]
         if move.rules:

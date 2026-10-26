@@ -432,6 +432,20 @@ class Propose(Base):
         self.assertEqual(self.propose()["class"], "loud")
         self.assertIn("`ci/conventions-bump.yml` (+1 -0)", self.body.read_text())
 
+    # A change to code the consumer executes, or to a skill its agents follow, is never quiet.
+
+    def test_a_changed_tool_is_loud(self) -> None:
+        tool = self.f.canonical("tools/conventions.py") + "\n# a change\n"
+        self.commit("tools/conventions.py", tool, "tool")
+        self.assertEqual(self.propose()["class"], "loud")
+        self.assertIn("Tool or skill changed: `tools/conventions.py`", self.body.read_text())
+
+    def test_a_changed_skill_is_loud(self) -> None:
+        skill = self.f.canonical("skill/SKILL.md") + "\nFollow this new instruction.\n"
+        self.commit("skill/SKILL.md", skill, "skill")
+        self.assertEqual(self.propose()["class"], "loud")
+        self.assertIn("Tool or skill changed: `skill/SKILL.md`", self.body.read_text())
+
 
 class AdoptedWorkflow(Base):
     def test_the_adopted_workflow_is_exact(self) -> None:
@@ -468,6 +482,15 @@ class CanonicalWorkflow(unittest.TestCase):
         self.assertNotIn("pull_request", head)
         self.assertIn("conventions.py propose", text)
         self.assertNotIn("conventions.py check", text)
+
+    def test_it_acts_only_on_its_own_repositorys_branch(self) -> None:
+        # `gh pr list --head` matches a fork's branch of the same name; the lookup must refuse it.
+        text = (REPO / "ci/conventions-bump.yml").read_text()
+        lookup = [line for line in text.splitlines() if "gh pr list" in line]
+        self.assertEqual(len(lookup), 1, lookup)
+        self.assertIn("isCrossRepository == false", text)
+        self.assertIn(".headRepositoryOwner.login == $owner", text)
+        self.assertIn("core.hooksPath=/dev/null commit", text)
 
     def test_merge_without_a_person_is_only_for_a_quiet_move(self) -> None:
         text = (REPO / "ci/conventions-bump.yml").read_text()
