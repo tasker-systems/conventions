@@ -515,7 +515,9 @@ class AdoptedWorkflow(Base):
 class ProjectionSet(Base):
     def test_a_path_the_new_revision_projects_is_projected_by_the_old_tool(self) -> None:
         tool = self.f.baseline / "tools/conventions.py"
-        tool.write_text(tool.read_text().replace('    "skill",\n', '    "skill",\n    "extra",\n', 1))
+        tool.write_text(
+            tool.read_text().replace('    "skill",\n', '    "skill",\n    "extra",\n', 1)
+        )
         (self.f.baseline / "extra").mkdir()
         (self.f.baseline / "extra/new.txt").write_text("projected from the new revision\n")
         git(self.f.baseline, "add", "-A")
