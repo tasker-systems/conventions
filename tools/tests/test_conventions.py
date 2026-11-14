@@ -26,7 +26,7 @@ PROJECTED = (
     "rust",
     "python",
     "typescript",
-    "ci",
+    ".github/workflows/conventions-bump.yml",
     "skill",
     "tools/conventions.py",
     "tools/slots.toml",
@@ -472,10 +472,10 @@ class Propose(Base):
         self.assertNotIn("Check F", body)
 
     def test_an_unadopted_canonical_file_still_makes_it_loud(self) -> None:
-        workflow = self.f.canonical("ci/conventions-bump.yml") + "# a change\n"
-        self.commit("ci/conventions-bump.yml", workflow, "workflow")
+        workflow = self.f.canonical(".github/workflows/conventions-bump.yml") + "# a change\n"
+        self.commit(".github/workflows/conventions-bump.yml", workflow, "workflow")
         self.assertEqual(self.propose()["class"], "loud")
-        self.assertIn("`ci/conventions-bump.yml` (+1 -0)", self.body.read_text())
+        self.assertIn("`.github/workflows/conventions-bump.yml` (+1 -0)", self.body.read_text())
 
     # A change to code the consumer executes, or to a skill its agents follow, is never quiet.
 
@@ -495,17 +495,29 @@ class Propose(Base):
 class AdoptedWorkflow(Base):
     def test_the_adopted_workflow_is_exact(self) -> None:
         path = ".github/workflows/conventions-bump.yml"
-        self.f.write(path, self.f.canonical("ci/conventions-bump.yml"))
-        self.f.adopt("ci/conventions-bump.yml", path, "exact")
+        self.f.write(path, self.f.canonical(".github/workflows/conventions-bump.yml"))
+        self.f.adopt(".github/workflows/conventions-bump.yml", path, "exact")
         self.assert_passes(self.f.check())
         self.f.append(path, "  pull_request:\n")
         self.assert_fails(self.f.check(), "content differs")
+
+    def test_an_adoption_of_the_moved_path_is_told_where_it_went(self) -> None:
+        # The canonical workflow moved from ci/ so that the baseline's Dependabot can see it.
+        path = ".github/workflows/conventions-bump.yml"
+        self.f.write(path, self.f.canonical(".github/workflows/conventions-bump.yml"))
+        self.f.adopt("ci/conventions-bump.yml", path, "exact")
+        self.assert_fails(
+            self.f.check(),
+            "canonical file ci/conventions-bump.yml moved to .github/workflows/conventions-bump.yml",
+        )
 
 
 class ProjectionSet(Base):
     def test_a_path_the_new_revision_projects_is_projected_by_the_old_tool(self) -> None:
         tool = self.f.baseline / "tools/conventions.py"
-        tool.write_text(tool.read_text().replace('    "ci",\n', '    "ci",\n    "extra",\n', 1))
+        tool.write_text(
+            tool.read_text().replace('    "skill",\n', '    "skill",\n    "extra",\n', 1)
+        )
         (self.f.baseline / "extra").mkdir()
         (self.f.baseline / "extra/new.txt").write_text("projected from the new revision\n")
         git(self.f.baseline, "add", "-A")
@@ -520,7 +532,7 @@ class CanonicalWorkflow(unittest.TestCase):
     """CONS-9: the adopted bump workflow never meets a pull request's code, and runs `propose`."""
 
     def test_it_runs_on_schedule_and_dispatch_only(self) -> None:
-        text = (REPO / "ci/conventions-bump.yml").read_text()
+        text = (REPO / ".github/workflows/conventions-bump.yml").read_text()
         head = text[text.index("\non:\n") : text.index("\npermissions:")]
         self.assertIn("schedule:", head)
         self.assertIn("workflow_dispatch:", head)
@@ -528,9 +540,16 @@ class CanonicalWorkflow(unittest.TestCase):
         self.assertIn("conventions.py propose", text)
         self.assertNotIn("conventions.py check", text)
 
+    def test_it_never_runs_in_the_baseline_that_holds_it(self) -> None:
+        # The canonical copy lives in the baseline's own workflows directory, where Dependabot
+        # keeps its pins current; the baseline is not a consumer and has no pin to move.
+        text = (REPO / ".github/workflows/conventions-bump.yml").read_text()
+        job = text[text.index("\n  bump:\n") :]
+        self.assertIn("if: github.repository != 'tasker-systems/conventions'", job[:400])
+
     def test_it_acts_only_on_its_own_repositorys_branch(self) -> None:
         # `gh pr list --head` matches a fork's branch of the same name; the lookup must refuse it.
-        text = (REPO / "ci/conventions-bump.yml").read_text()
+        text = (REPO / ".github/workflows/conventions-bump.yml").read_text()
         lookup = [line for line in text.splitlines() if "gh pr list" in line]
         self.assertEqual(len(lookup), 1, lookup)
         self.assertIn("isCrossRepository == false", text)
@@ -538,7 +557,7 @@ class CanonicalWorkflow(unittest.TestCase):
         self.assertIn("core.hooksPath=/dev/null commit", text)
 
     def test_merge_without_a_person_is_only_for_a_quiet_move(self) -> None:
-        text = (REPO / "ci/conventions-bump.yml").read_text()
+        text = (REPO / ".github/workflows/conventions-bump.yml").read_text()
         quiet = text.index('if [ "$KIND" = quiet ]; then')
         otherwise = text.index("else", quiet)
         auto = [i for i in range(len(text)) if text.startswith("--auto", i)]

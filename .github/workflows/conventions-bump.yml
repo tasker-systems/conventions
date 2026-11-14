@@ -1,8 +1,10 @@
 # Moves this repository's pin on the tasker-systems conventions baseline (CONS-9).
 #
-# CANONICAL: this file is the baseline's `ci/conventions-bump.yml`, adopted in `exact` mode at
-# `.github/workflows/conventions-bump.yml`, so check A fails on any local edit. Change it in the
-# baseline; a change there reaches this repository as a loud bump.
+# CANONICAL: this file is the baseline's `.github/workflows/conventions-bump.yml`, adopted in
+# `exact` mode at the same path, so check A fails on any local edit. Change it in the baseline; a
+# change there reaches this repository as a loud bump. It lives in the baseline's own workflows
+# directory so that the baseline's Dependabot keeps its pins current; a consumer excludes its copy
+# from its own Dependabot (`exclude-paths`), since an edit there would fail check A.
 #
 # Each day, `conventions.py propose` moves the pin to the baseline's main and classifies the move:
 #   none   the pin is already main's: any open bump PR is closed
@@ -36,6 +38,8 @@ concurrency:
 jobs:
   bump:
     name: Move the conventions pin
+    # The baseline holds the canonical copy but is not a consumer: it has no pin to move.
+    if: github.repository != 'tasker-systems/conventions'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:

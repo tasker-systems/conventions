@@ -55,8 +55,9 @@ python/
 typescript/
   biome.json             the shared Biome rule set
   tsconfig.base.json     the strict compiler base
-ci/
-  conventions-bump.yml   the workflow that moves a consumer's pin (CONS-9), adopted `exact`
+.github/workflows/
+  conventions-bump.yml   the workflow that moves a consumer's pin (CONS-9), adopted `exact`; it
+                         is skipped here, and lives here so Dependabot keeps its pins current
 skill/           the agent skill projected into each consumer, with that consumer's statuses
 tools/
   conventions.py         `check` (A–F), `bump`, `witness` and `propose`, run from the projection

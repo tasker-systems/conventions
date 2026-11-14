@@ -110,14 +110,15 @@ CONS-2. *Why:* a public repository's CI must not pass or fail depending on wheth
 triggered it can see something private.
 
 **CONS-9 — the pin moves itself; a quiet move merges on CI, a loud one waits for a person.** Each
-consumer adopts the canonical [`../ci/conventions-bump.yml`](../ci/conventions-bump.yml) in `exact`
-mode at `.github/workflows/conventions-bump.yml`. Each day it runs `conventions.py propose`, which
-moves the pin to `main` and classifies the move:
+consumer adopts the canonical
+[`../.github/workflows/conventions-bump.yml`](../.github/workflows/conventions-bump.yml) in `exact`
+mode at the same path. Each day it runs `conventions.py propose`, which moves the pin to `main` and
+classifies the move:
 
 | Class | When | The bump PR |
 |---|---|---|
 | `none` | the pin is already `main` | none is opened, and an open one is closed |
-| `quiet` | no rule was added, removed or changed, nothing under `rust/`, `python/`, `typescript/`, `ci/`, `tools/` or `skill/` changed, and no doctrine text changed beyond the register's generated cells | merges on green CI |
+| `quiet` | no rule was added, removed or changed, nothing under `rust/`, `python/`, `typescript/`, `tools/` or `skill/` and not the bump workflow changed, and no doctrine text changed beyond the register's generated cells | merges on green CI |
 | `loud` | anything else | waits for a person; check F (a moved rule) or A (a changed canonical file) is red until they act |
 
 A canonical file the consumer has not adopted still makes a move loud, because adopting it later
@@ -134,6 +135,14 @@ reviewer, only its CI, and asking a person to approve one is how pins drifted. A
 change something is still one reviewed act in one repository (CONS-5). Doctrine text joined the
 loud set when a security review of making-music's adoption showed that a reworded rule reached
 agents through an auto-merged bump.
+
+The canonical workflow lives in the baseline's own `.github/workflows/`, with its job skipped in
+the baseline, because that directory is the only place Dependabot reads workflow pins: the
+baseline's Dependabot keeps them current, and each update reaches consumers as a loud bump. A
+consumer's Dependabot leaves its copy alone: its `github-actions` entry lists
+`.github/workflows/conventions-bump.yml` under `exclude-paths`. *Why:* an action the consumer pins
+only in that file would otherwise draw a Dependabot PR that check A refuses, every time the action
+releases, while the baseline's copy, out of Dependabot's sight in `ci/`, never moved at all.
 
 ## Not specified
 
