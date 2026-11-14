@@ -133,8 +133,8 @@ its own repository's branch, never a fork's of the same name. *Why:* a move that
 doctrine text, config, tool or skill (the README, the register's consumer columns) needs no
 reviewer, only its CI, and asking a person to approve one is how pins drifted. A move that does
 change something is still one reviewed act in one repository (CONS-5). Doctrine text joined the
-loud set when a security review of making-music's adoption showed that a reworded rule reached
-agents through an auto-merged bump.
+loud set when a security review of duet's adoption (the repository was then named making-music)
+showed that a reworded rule reached agents through an auto-merged bump.
 
 The canonical workflow lives in the baseline's own `.github/workflows/`, with its job skipped in
 the baseline, because that directory is the only place Dependabot reads workflow pins: the
