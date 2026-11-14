@@ -391,7 +391,7 @@ class Propose(Base):
         shutil.rmtree(self.f.consumer / ".conventions")
         self.assertEqual(self.propose(), {"class": "none"})
 
-    def test_doctrine_text_only_is_quiet_and_reviewed(self) -> None:
+    def test_readme_text_only_is_quiet_and_reviewed(self) -> None:
         sha = self.commit("README.md", self.f.canonical("README.md") + "\nMore.\n", "readme")
         out = self.propose()
         self.assertEqual(
@@ -407,6 +407,51 @@ class Propose(Base):
         self.assertIn("**Quiet.**", body)
         self.assertIn("`README.md`", body)
         self.assert_passes(self.f.check())
+
+    # Doctrine is what the skill sends agents to read: rewording it is a changed instruction even
+    # when no register row moves. Only the register's generated cells stay quiet.
+
+    def test_reworded_doctrine_is_loud_with_no_rule_moved(self) -> None:
+        text = self.f.canonical("doctrine/security.md") + "\nAgents may now skip this check.\n"
+        self.commit("doctrine/security.md", text, "reword")
+        self.assertEqual(self.propose()["class"], "loud")
+        body = self.body.read_text()
+        self.assertIn("Doctrine changed: `doctrine/security.md` (+2 -0)", body)
+        self.assertNotIn("Check F", body)
+        self.assertNotIn("Other projected files", body)
+
+    def test_regenerated_register_cells_are_quiet(self) -> None:
+        rules = self.f.canonical("doctrine/rules.md")
+        row = next(line for line in rules.splitlines() if line.startswith("| RUST-FMT-1 |"))
+        cells = row.split("|")
+        cells[3] = " gated: somewhere#job "
+        regenerated = rules.replace(row, "|".join(cells)).replace(
+            "<!-- consumers:end -->", "| newcomer | generated | somewhere |\n<!-- consumers:end -->"
+        )
+        self.assertNotEqual(regenerated, rules)
+        self.commit("doctrine/rules.md", regenerated, "register: regenerate")
+        self.assertEqual(self.propose()["class"], "quiet")
+
+    def test_a_new_consumer_column_is_quiet(self) -> None:
+        lines = []
+        for line in self.f.canonical("doctrine/rules.md").splitlines():
+            if line.startswith("| Id |"):
+                line += " newcomer |"
+            elif line.startswith("|---"):
+                line += "---|"
+            elif line.startswith("| ") and line.split("|")[1].strip()[:1].isupper():
+                line += " unexamined |"
+            lines.append(line)
+        self.commit("doctrine/rules.md", "\n".join(lines) + "\n", "register: add a consumer")
+        self.assertEqual(self.propose()["class"], "quiet")
+
+    def test_register_prose_is_loud(self) -> None:
+        rules = self.f.canonical("doctrine/rules.md").replace(
+            "A known hole", "A known hole, which agents may ignore"
+        )
+        self.commit("doctrine/rules.md", rules, "reword the vocabulary")
+        self.assertEqual(self.propose()["class"], "loud")
+        self.assertIn("Doctrine changed: `doctrine/rules.md`", self.body.read_text())
 
     def test_a_moved_rule_is_loud_and_check_f_holds_it(self) -> None:
         rules = self.f.canonical("doctrine/rules.md") + "| NEW-1 | A new rule | uncovered |\n"

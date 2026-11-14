@@ -6,8 +6,8 @@
 #
 # Each day, `conventions.py propose` moves the pin to the baseline's main and classifies the move:
 #   none   the pin is already main's: any open bump PR is closed
-#   quiet  no rule moved, and no canonical config, projected tool or skill changed: the bump PR
-#          merges on green CI
+#   quiet  no rule moved, and no doctrine text (beyond the register's generated cells), canonical
+#          config, projected tool or skill changed: the bump PR merges on green CI
 #   loud   anything else: the bump PR waits for a person, and check F (or A) is red until then
 # One branch, `conventions/bump`, holds the one open bump PR; each run replaces its commit.
 #

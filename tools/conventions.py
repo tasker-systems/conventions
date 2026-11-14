@@ -35,8 +35,9 @@ seed that finds nothing to edit fails rather than passing vacuously.
 pin, classifies the move, writes a pull-request body to `--body-file`, and prints `class=`,
 `revision=`, `previous=` and `skill=` lines for `$GITHUB_OUTPUT`, and nothing else on stdout. The
 class is `none` (the pin is already main's, or this repository has not adopted), `quiet` (no rule
-was added, removed or changed, and nothing changed under `rust/`, `python/`, `typescript/`, `ci/`,
-`tools/` or `skill/`) or `loud` (anything else). Only a quiet move may merge without a person.
+was added, removed or changed, nothing changed under `rust/`, `python/`, `typescript/`, `ci/`,
+`tools/` or `skill/`, and no doctrine text changed beyond the register's generated cells) or `loud`
+(anything else). Only a quiet move may merge without a person.
 
 NOT CHECKED, by design:
   - that a `gated:` gate actually fails on a violation (that is each consumer's bite test, TW-5);
@@ -830,6 +831,15 @@ CANONICAL_DIRS = ("rust/", "python/", "typescript/", "ci/")
 # agents are told to follow: a change to either is reviewed, never merged on CI alone.
 CONTROL_PATHS = ("tools/", "skill/")
 LOUD_PATHS = CANONICAL_DIRS + CONTROL_PATHS
+# Doctrine is what the projected skill sends agents to read, so a change to its text is an
+# instruction to them and is reviewed too. The one exception is what `tools/register.py` generates
+# in the register: the consumers block and each table's consumer columns, which move whenever any
+# consumer's status does and instruct nobody.
+DOCTRINE = "doctrine/"
+REGISTER = "doctrine/rules.md"
+REGISTER_BLOCK = re.compile(
+    re.escape("<!-- consumers:begin -->") + ".*?" + re.escape("<!-- consumers:end -->"), re.DOTALL
+)
 
 
 def changed_paths(before: dict[str, bytes], after: dict[str, bytes]) -> list[str]:
@@ -838,11 +848,39 @@ def changed_paths(before: dict[str, bytes], after: dict[str, bytes]) -> list[str
     )
 
 
+def register_authored(data: bytes | None) -> str | None:
+    """The register with its generated parts removed: the consumers block, and every table cell
+    after a row's first two (the rule's id and statement, or a header's `Id | Rule`)."""
+    if data is None:
+        return None
+    text = REGISTER_BLOCK.sub("", data.decode("utf-8", errors="replace"))
+    lines = []
+    for line in text.splitlines():
+        if line.startswith("|"):
+            line = "|".join(re.split(r"(?<!\\)\|", line)[:3])
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def doctrine_changes(move: Move) -> list[str]:
+    """Changed doctrine files, leaving out a register whose only change is generated cells."""
+    found = []
+    for path in changed_paths(move.before, move.after):
+        if not path.startswith(DOCTRINE):
+            continue
+        if path == REGISTER and register_authored(move.before.get(path)) == register_authored(
+            move.after.get(path)
+        ):
+            continue
+        found.append(path)
+    return found
+
+
 def classify(move: Move) -> str:
     if move.sha == move.previous:
         return "none"
     loud = [p for p in changed_paths(move.before, move.after) if p.startswith(LOUD_PATHS)]
-    return "loud" if move.rules or loud else "quiet"
+    return "loud" if move.rules or loud or doctrine_changes(move) else "quiet"
 
 
 def line_stat(old: bytes | None, new: bytes | None) -> str:
@@ -869,7 +907,8 @@ def proposal_body(move: Move, kind: str, url: str) -> str:
     changed = changed_paths(move.before, move.after)
     canonical = [p for p in changed if p.startswith(CANONICAL_DIRS)]
     control = [p for p in changed if p.startswith(CONTROL_PATHS)]
-    others = [p for p in changed if not p.startswith(LOUD_PATHS)]
+    doctrine = doctrine_changes(move)
+    others = [p for p in changed if not p.startswith(LOUD_PATHS) and p not in doctrine]
     web = url.removesuffix(".git")
     lines = [
         f"Moves this repository's pin on the tasker-systems conventions baseline from "
@@ -880,8 +919,8 @@ def proposal_body(move: Move, kind: str, url: str) -> str:
     ]
     if kind == "quiet":
         lines += [
-            "**Quiet.** No rule was added, removed or changed, and no canonical config, projected "
-            "tool or skill changed. It merges on green CI.",
+            "**Quiet.** No rule was added, removed or changed, and no doctrine text, canonical "
+            "config, projected tool or skill changed. It merges on green CI.",
         ]
     else:
         lines += ["**Loud: this waits for a person.**", ""]
@@ -897,6 +936,12 @@ def proposal_body(move: Move, kind: str, url: str) -> str:
                 f"- Tool or skill changed: `{path}` "
                 f"({line_stat(move.before.get(path), move.after.get(path))}). Read it: CI runs this "
                 "code, and agents follow this skill."
+            )
+        for path in doctrine:
+            lines.append(
+                f"- Doctrine changed: `{path}` "
+                f"({line_stat(move.before.get(path), move.after.get(path))}). Read it: the skill "
+                "sends agents to this text."
             )
         lines += ["", "To land it, in this branch:"]
         if move.rules:
