@@ -31,6 +31,6 @@ branch = "main"
 private = true
 
 [[consumer]]
-name = "making-music"
-repo = "tasker-systems/making-music"
+name = "duet"
+repo = "tasker-systems/duet"
 branch = "main"

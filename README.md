@@ -10,7 +10,7 @@ repositories consume it:
 | [`temper-contrib`](https://github.com/tasker-systems/temper-contrib) | public |
 | [`tasker-contrib`](https://github.com/tasker-systems/tasker-contrib) | public (its own surfaces; templates and example apps are user-owned and out of scope) |
 | `storyteller` | private |
-| [`making-music`](https://github.com/tasker-systems/making-music) | public |
+| [`duet`](https://github.com/tasker-systems/duet) | public |
 
 The baseline began from the first two. They grew up separately and are each strong where the other
 is thin. tasker-core carries the code-level doctrine (written tenets, a phased lint table, bounded
