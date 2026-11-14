@@ -1,0 +1,16 @@
+# Dependency updates for this repository (SC-IN-2). Its one ecosystem is GitHub Actions: the pins
+# in its own workflows, and in the canonical conventions-bump.yml that consumers adopt `exact`
+# (CONS-9), which lives in .github/workflows/ so that this entry sees it. A change to that file
+# reaches every consumer as a loud bump.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    # SC-IN-1: a new release waits a week before it is proposed.
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]

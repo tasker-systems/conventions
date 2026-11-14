@@ -10,7 +10,7 @@
 #   config-valid   every canonical config parses and still refuses what it claims to refuse
 #                  (`tools/check-config-valid.py`; CLAUDE.md "valid as shipped")
 #   repo           the register is complete (every doctrine rule has one row) and links resolve
-#   workflows      actionlint on this file
+#   workflows      actionlint on every workflow here, the canonical conventions-bump.yml included
 #   ci-success     the one required check (CI-2)
 #
 # Every `uses:` is SHA-pinned (SC-GHA-1); tool installs name exact versions (SC-IN-1).
@@ -92,8 +92,6 @@ jobs:
           sudo install -m 0755 actionlint /usr/local/bin/
       - name: actionlint
         run: actionlint
-      - name: actionlint on the canonical workflows consumers adopt (CONS-9)
-        run: actionlint ci/*.yml
 
   ci-success:
     name: CI Success

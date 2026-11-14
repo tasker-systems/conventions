@@ -31,13 +31,13 @@ token, credential helper or git configuration: that is the control, and the witn
 needs nothing an outsider lacks. Every workflow job that runs `check` must reference no secret. A
 seed that finds nothing to edit fails rather than passing vacuously.
 
-`propose` is `bump --revision main` for the canonical bump workflow (CONS-9, `ci/`). It moves the
+`propose` is `bump --revision main` for the canonical bump workflow (CONS-9). It moves the
 pin, classifies the move, writes a pull-request body to `--body-file`, and prints `class=`,
 `revision=`, `previous=` and `skill=` lines for `$GITHUB_OUTPUT`, and nothing else on stdout. The
 class is `none` (the pin is already main's, or this repository has not adopted), `quiet` (no rule
-was added, removed or changed, nothing changed under `rust/`, `python/`, `typescript/`, `ci/`,
-`tools/` or `skill/`, and no doctrine text changed beyond the register's generated cells) or `loud`
-(anything else). Only a quiet move may merge without a person.
+was added, removed or changed, nothing changed under `rust/`, `python/`, `typescript/`, `tools/`
+or `skill/` or in the canonical bump workflow, and no doctrine text changed beyond the register's
+generated cells) or `loud` (anything else). Only a quiet move may merge without a person.
 
 NOT CHECKED, by design:
   - that a `gated:` gate actually fails on a violation (that is each consumer's bite test, TW-5);
@@ -79,7 +79,7 @@ PROJECTED = (
     "rust",
     "python",
     "typescript",
-    "ci",
+    ".github/workflows/conventions-bump.yml",
     "skill",
     "tools/conventions.py",
     "tools/slots.toml",
@@ -377,10 +377,21 @@ def local_slots(consumer: Consumer, canonical: str) -> list[str]:
     return list(data.get(canonical, {}).get("slots", []))
 
 
+# Canonical files the baseline has moved: old path -> new. A consumer whose adoption map still
+# names the old path is told where the file went, rather than only that it is gone.
+MOVED = {"ci/conventions-bump.yml": ".github/workflows/conventions-bump.yml"}
+
+
 def differences(adopted: Adopted, consumer: Consumer) -> list[str]:
     canonical_path = consumer.baseline_dir / adopted.canonical
     local_path = consumer.root / adopted.path
     if not canonical_path.is_file():
+        moved = MOVED.get(adopted.canonical)
+        if moved and (consumer.baseline_dir / moved).is_file():
+            return [
+                f"(canonical file {adopted.canonical} moved to {moved}: set `canonical` to it in "
+                "consumer.toml, and bring this file into line with it)"
+            ]
         return [f"(canonical file {adopted.canonical} is not in the projection)"]
     if not local_path.is_file():
         return ["(file missing)"]
@@ -508,8 +519,8 @@ class Fetched:
         """The projected path set as the tool *at that revision* declares it.
 
         A bump is run by the old pin's tool, so taking the set from the running tool would leave a
-        path the new revision adds (such as `ci`) out of the projection, and check B, run by the
-        new tool, would then fail it.
+        path the new revision adds (such as the bump workflow) out of the projection, and check B,
+        run by the new tool, would then fail it.
         """
         source = git(["show", f"{revision}:tools/conventions.py"], self.path).stdout
         try:
@@ -824,13 +835,13 @@ def bump(root: Path, revision: str, url: str | None, init_name: str | None) -> i
 # propose — the bump workflow's step: move the pin, classify the move, write the PR body (CONS-9)
 # --------------------------------------------------------------------------------------------
 
-# A change under any of these is a change to what a consumer enforces, adopted here or not: a file
-# adopted later would carry an unreviewed change in with it.
-CANONICAL_DIRS = ("rust/", "python/", "typescript/", "ci/")
+# A change under (or to) any of these is a change to what a consumer enforces, adopted here or
+# not: a file adopted later would carry an unreviewed change in with it.
+CANONICAL_PATHS = ("rust/", "python/", "typescript/", ".github/workflows/conventions-bump.yml")
 # The projected tool is code the consumer's CI and bump workflow execute, and the skill is what its
 # agents are told to follow: a change to either is reviewed, never merged on CI alone.
 CONTROL_PATHS = ("tools/", "skill/")
-LOUD_PATHS = CANONICAL_DIRS + CONTROL_PATHS
+LOUD_PATHS = CANONICAL_PATHS + CONTROL_PATHS
 # Doctrine is what the projected skill sends agents to read, so a change to its text is an
 # instruction to them and is reviewed too. The one exception is what `tools/register.py` generates
 # in the register: the consumers block and each table's consumer columns, which move whenever any
@@ -905,7 +916,7 @@ def line_stat(old: bytes | None, new: bytes | None) -> str:
 def proposal_body(move: Move, kind: str, url: str) -> str:
     short, previous = move.sha[:12], move.previous[:12]
     changed = changed_paths(move.before, move.after)
-    canonical = [p for p in changed if p.startswith(CANONICAL_DIRS)]
+    canonical = [p for p in changed if p.startswith(CANONICAL_PATHS)]
     control = [p for p in changed if p.startswith(CONTROL_PATHS)]
     doctrine = doctrine_changes(move)
     others = [p for p in changed if not p.startswith(LOUD_PATHS) and p not in doctrine]
