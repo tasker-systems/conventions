@@ -29,3 +29,8 @@ name = "storyteller"
 repo = "tasker-systems/storyteller"
 branch = "main"
 private = true
+
+[[consumer]]
+name = "making-music"
+repo = "tasker-systems/making-music"
+branch = "main"
