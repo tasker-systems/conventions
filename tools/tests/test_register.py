@@ -69,11 +69,21 @@ class Register(unittest.TestCase):
     def row(self, rule: str) -> str:
         return next(x for x in self.rules().splitlines() if x.startswith(f"| {rule} |"))
 
+    def cell(self, rule: str, consumer: str) -> str:
+        """A rule's cell in one consumer's column, found by that table's header, not by position:
+        every registered consumer has a column, in consumers.toml order."""
+        lines = self.rules().splitlines()
+        at = next(i for i, x in enumerate(lines) if x.startswith(f"| {rule} |"))
+        header = next(x for x in reversed(lines[:at]) if x.startswith("| Id |"))
+        names = [c.strip() for c in header.strip("|").split("|")]
+        cells = [c.strip() for c in lines[at].strip("|").split("|")]
+        return cells[names.index(consumer)]
+
     def test_generate_writes_the_consumer_column_and_check_then_passes(self) -> None:
         self.assertEqual(self.run_tool("generate").returncode, 0)
         self.assertIn("| gated: .github/workflows/ci.yml#lint |", self.row("RUST-FMT-1"))
         # A rule the consumer does not list is unexamined there, never blank.
-        self.assertTrue(self.row("RUST-LINT-1").endswith("| unexamined |"))
+        self.assertEqual(self.cell("RUST-LINT-1", "temper-contrib"), "unexamined")
         result = self.run_tool("check")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
