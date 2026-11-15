@@ -38,6 +38,7 @@ doctrine/        the stance, in prose — why each rule exists
   shell.md         bash, strict mode, ShellCheck, portability
   docs.md          Markdown shape and links
   api.md           JSON on the wire and in the OpenAPI spec
+  compat.md        what a compatibility gate measures against: the last release
   supply-chain.md  dependencies, advisories, licenses, Actions, toolchain inputs
   security.md      credentials, redaction, SQL, auth posture
   concurrency.md   bounded resources, contained failure, coordination in the database
