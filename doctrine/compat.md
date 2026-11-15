@@ -11,7 +11,7 @@ Terms:
 
 - **The last release** is, for each stream that ships the surface, its newest release that
   qualifies under COMPAT-2.
-- **The window** is every change merged since the last release.
+- **The window**, for each stream, is every change merged since that stream's last release.
 - **An entry point** is what a client calls or names.
   - For an HTTP API it is an operation, identified by its method and path template with parameter
     names erased, so `/items/{id}` and `/items/{item_id}` are one operation.
@@ -37,7 +37,7 @@ Terms:
   the same values before and after. A report that differs in any of these is a different break, so
   a break this PR deepens is charged. A report at the same location and of the same kind, with
   different values, is not charged when base against head reports no break at that location:
-  nothing that fails at head failed to fail at base. A comparator that merges the breaks at one
+  everything that fails at head already failed at base. A comparator that merges the breaks at one
   location (all the removed enum values as one report, for example), or does not report their
   values, is used under the per-entry-point fallback below.
 - **A declared break** is the PR's own statement that a break is intended: a version class, a
@@ -68,12 +68,13 @@ The consequences:
   reports it. A further or deeper break this PR makes at the same place is a different break, and
   is charged.
 
-Subtracting release against base assumes that every break it reports was charged when it landed.
-A break that landed while the gate gave the base-only verdict (COMPAT-2) was not. So before the
+Subtracting release against base assumes that every break it reports was charged when it landed. A
+break that landed while the gate gave the base-only verdict (COMPAT-2) was not. So before the
 release tooling publishes, it judges the candidate it is about to publish against the last release
-of each stream that ships the surface, and refuses any break no declaration in the window names.
-Where a consumer declares only a version class, it refuses a break the window's class does not
-admit, and records that it cannot tell breaks apart.
+of each stream that ships the surface, and refuses any break no declaration in the window names. A
+break at the same location and of the same kind as a named one, whose values it relaxes, counts as
+named. Where a consumer declares only a version class, it refuses a break the window's class does
+not admit, and records that it cannot tell breaks apart.
 
 **The per-entry-point fallback.** Where the comparator returns only a verdict per entry point, and
 not the breaks themselves, the gate charges an entry point when release against head breaks it
@@ -124,17 +125,17 @@ when all of these hold:
 
 - it is a tag in the release tooling's own tag form for that stream;
 - it is an ancestor of the PR's base or, for a stream released from a declared maintenance line,
-  of that line's head;
+  of that line's head as the remote holds it when the gate runs;
 - it was found in a history that holds it: the clone is not cut short above it, and tags were
   fetched;
 - no tag of the same stream on the remote (`git ls-remote --tags`, for example) is both an ancestor
   of that same commit and a descendant of it.
 
-A gate that cannot list the remote's tags, or cannot place a listed tag's commit in its history,
-cannot show the last condition, and gives the base-only verdict. A derivation's fallback is never a
-release: a root commit, a shallow boundary, a hand-given override. The derivation reports a
-fallback in its output, not only in a log line, and a gate that cannot tell whether it got one
-treats it as one.
+A gate that cannot list the remote's tags, or cannot place a listed tag's commit in its history, or
+cannot read a declared maintenance line's head from the remote, cannot show the last condition, and
+gives the base-only verdict. A derivation's fallback is never a release: a root commit, a shallow
+boundary, a hand-given override. The derivation reports a fallback in its output, not only in a log
+line, and a gate that cannot tell whether it got one treats it as one.
 
 What was present at the release is read from what the release published. Where that differs from
 the tree at the tag (a crate on its registry), the published copy is read. Presence is never
@@ -161,12 +162,12 @@ disagree about which window a change belongs to. A fallback ref is worse than no
 clone can make the PR's own head the "root", and every entry point then equals its "released form".
 An older genuine tag is as bad, because shape shipped since it reads as window-born. A gate that
 cannot find the release and treats everything as new waves every break through. "I could not look"
-is not "nothing shipped". The base-only verdict is stricter than the release-relative one
-everywhere except two places, which only the release can reveal: a re-birth, and a property the
-release admitted through `additionalProperties` or a name pattern. So falling back can redden a PR,
-and passes nothing COMPAT-1 refuses except those two. The pre-publish check in COMPAT-1 catches a
-re-birth, and catches the second only where the comparator judges it; otherwise it remains the
-residue COMPAT-1 records.
+is not "nothing shipped". The base-only verdict is stricter than the release-relative one everywhere
+except two places, which only the release can reveal: a re-birth, and a property the release
+admitted through `additionalProperties`, `unevaluatedProperties` or a name pattern. So falling back
+can redden a PR, and passes nothing COMPAT-1 refuses except those two. The pre-publish check in
+COMPAT-1 catches a re-birth, and catches the second only where the comparator judges it; otherwise
+it remains the residue COMPAT-1 records.
 
 ## Bite cases
 
@@ -184,8 +185,8 @@ COMPAT-1:
    property. Under the per-entry-point fallback, it fails too.
 5. A window-born parameter component on a released operation that becomes required fails.
 6. An operation that an earlier PR broke, with a declared break, passes when this PR only grows it
-   or relaxes the break (`maxLength` 10→5 declared, then 5→8). It fails when this PR breaks it
-   further, including deeper at the same place (a second enum value removed).
+   or relaxes the break (a request property's `maxLength` 10→5 declared, then 5→8). It fails when
+   this PR breaks it further, including deeper at the same place (a second enum value removed).
 7. An operation whose path template parameter was renamed is judged against its released form.
 8. A property the release admitted through `additionalProperties`, then narrowed by name, fails.
 9. A changed security scheme, webhook payload or discriminator mapping value on a released entry
