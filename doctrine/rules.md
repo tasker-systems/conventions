@@ -235,8 +235,8 @@ do not enforce the rule (RUST-LINT-1, RUST-LINT-2, RUST-TYPE-1, TS-TOOL-1).
 
 | Id | Rule | temper | tasker-core | temper-contrib | duet |
 |---|---|---|---|---|---|
-| COMPAT-1 | A gate charges only breaks a release client can observe; confined window-born shape moves freely | unexamined | unexamined | unexamined | unexamined |
-| COMPAT-2 | The last release is the release tooling's; a ref not provably a release fails closed | unexamined | unexamined | unexamined | unexamined |
+| COMPAT-1 | A gate charges only the release-observable breaks the PR made, judged on resolved entry points | unexamined | unexamined | unexamined | unexamined |
+| COMPAT-2 | The last release is the release tooling's; a ref not provably the newest release fails closed | unexamined | unexamined | unexamined | unexamined |
 
 ## Consuming the baseline
 
