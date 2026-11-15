@@ -59,10 +59,10 @@ The consequences:
   reports it. A further or deeper break this PR makes at the same place is a different break, and
   is charged.
 
-Subtracting release against base assumes that every break it reports was charged when it landed. A
-break that landed while the gate gave the base-only verdict (COMPAT-2) was not. So before the release
-tooling publishes, it judges the release against the last release, and refuses any break the window
-did not declare.
+Subtracting release against base assumes that every break it reports was charged when it landed.
+A break that landed while the gate gave the base-only verdict (COMPAT-2) was not. So before the
+release tooling publishes, it judges the release against the last release, and refuses any break
+the window did not declare.
 
 **The per-entry-point fallback.** Where the comparator returns only a verdict per entry point, and
 not the breaks themselves, the gate charges an entry point when release against head breaks it
