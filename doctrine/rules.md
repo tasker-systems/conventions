@@ -231,6 +231,13 @@ do not enforce the rule (RUST-LINT-1, RUST-LINT-2, RUST-TYPE-1, TS-TOOL-1).
 | API-JSON-4 | Durations are unit-suffixed integers | practiced | practiced | n/a: no HTTP API | n/a: no HTTP API |
 | API-JSON-5 | No success envelope; lists say if complete | uncovered: 26 list responses are bare arrays that cannot signal truncation | practiced | n/a: no HTTP API | n/a: no HTTP API |
 
+## Compatibility gates
+
+| Id | Rule | temper | tasker-core | temper-contrib | duet |
+|---|---|---|---|---|---|
+| COMPAT-1 | A gate charges only the release-observable breaks the PR made, judged on resolved entry points | unexamined | unexamined | unexamined | unexamined |
+| COMPAT-2 | The last release is the release tooling's; a ref not provably the newest release fails closed | unexamined | unexamined | unexamined | unexamined |
+
 ## Consuming the baseline
 
 | Id | Rule | temper | tasker-core | temper-contrib | duet |
