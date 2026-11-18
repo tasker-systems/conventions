@@ -45,6 +45,7 @@ doctrine/        the stance, in prose — why each rule exists
   testing.md       test tiers, ignored tests, CI shape
   tripwires.md     how a repo-specific guard is written, tested and wired
   agent-guidance.md how a consuming repo's agent guidance is shaped
+  roadmap.md       how a repo publishes where its work is going (ROAD-*)
   consuming.md     how a repo pins, projects and checks the baseline (CONS-*)
 rust/            canonical config a consuming repo adopts
   workspace-lints.toml   the [workspace.lints] table
