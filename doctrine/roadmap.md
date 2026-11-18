@@ -7,9 +7,9 @@ taken on trust. These rules keep that view answerable to the records.
 **Terms.** A **goal** is a recorded outcome with a statement of what it protects. A **work item**
 advances at most one goal, and is **filed** once it is recorded in the tracker. A work item is
 **claimed** while someone is working it, and **ready** when it can be started now. A goal is
-**open** until it is closed or abandoned. A snapshot is **drawn by hand** when a person assigns its
-lanes, and **read from the records** when they are computed from them. A repository's guidance
-names which field or state in its own tracker carries each term, and which goal statuses it has.
+**open** until it is closed or abandoned. A lane is **read from the records** when it is computed
+from them, and **drawn by hand** when a person assigns it. A repository's guidance names which
+field or state in its own tracker carries each term, and which goal statuses it has.
 
 **ROAD-1 — a roadmap is a dated snapshot, never a living plan.** Each roadmap is a new record that
 states the date it describes, and which of its lanes were read from the records. A newer snapshot
@@ -23,11 +23,12 @@ tell a stated direction from a changed one without digging through history.
 - **Next:** it has filed work, none of it claimed or ready.
 - **Later:** it has no filed work.
 
-Each goal's line states how many of its work items are claimed, ready and filed, so a goal with
-one small claimed item is not read as one being worked in earnest. A snapshot that does not read
-every lane from the records names, for each lane it did not read, how that lane was assigned, such
-as work in progress standing in for Now while no work item is marked ready. *Why:* a lane assigned
-by opinion drifts from the work, and a stand-in nobody names is read as the rule.
+Each goal's line states how many of its work items are claimed, how many are ready and unclaimed,
+and how many are filed in all, so a goal with one small claimed item is not read as one being
+worked in earnest. A snapshot that does not read every lane from the records names, for each lane
+it did not read, how that lane was assigned, such as work in progress standing in for Now while no
+work item is marked ready. *Why:* a lane assigned by opinion drifts from the work, and a stand-in
+nobody names is read as the rule.
 
 **ROAD-3 — goals are grouped by one declared key, holding one value from a written vocabulary.** A
 repository chooses the key that groups its goals (a product area, say). Its owner decides the
