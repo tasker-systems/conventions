@@ -33,6 +33,7 @@ touching; each rule states its *why* beside it, and its id is what you cite in a
 | Tests and CI shape | `.conventions/baseline/doctrine/testing.md` |
 | Writing a tripwire | `.conventions/baseline/doctrine/tripwires.md` |
 | Agent guidance | `.conventions/baseline/doctrine/agent-guidance.md` |
+| A roadmap or roadmap snapshot | `.conventions/baseline/doctrine/roadmap.md` |
 | This repository's pin, exceptions and statuses | `.conventions/baseline/doctrine/consuming.md` |
 
 ## Before you claim a rule is enforced

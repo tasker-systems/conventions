@@ -166,6 +166,17 @@ do not enforce the rule (RUST-LINT-1, RUST-LINT-2, RUST-TYPE-1, TS-TOOL-1).
 | AG-5 | Baseline arrives as a projected skill | gated: .github/workflows/quality-gate.yml#conventions | gated: .github/workflows/ci.yml#conventions | gated: .github/workflows/ci.yml#conventions | gated: .github/workflows/ci.yml#gate |
 | AG-6 | Hooks point at real paths | practiced | practiced | practiced | n/a: no session hooks |
 
+## Roadmaps
+
+| Id | Rule | temper | tasker-core | temper-contrib | duet |
+|---|---|---|---|---|---|
+| ROAD-1 | A roadmap is a dated snapshot | unexamined | unexamined | unexamined | unexamined |
+| ROAD-2 | Lanes are what the records say | unexamined | unexamined | unexamined | unexamined |
+| ROAD-3 | Goals grouped by one declared key | unexamined | unexamined | unexamined | unexamined |
+| ROAD-4 | Value read from the goal, never scored per item | unexamined | unexamined | unexamined | unexamined |
+| ROAD-5 | A snapshot states what it leaves out | unexamined | unexamined | unexamined | unexamined |
+| ROAD-6 | Wider audience: outcome, not current weakness | unexamined | unexamined | unexamined | unexamined |
+
 ## Python
 
 | Id | Rule | temper | tasker-core | temper-contrib | duet |
