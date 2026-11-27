@@ -1151,22 +1151,40 @@ class Case:
     offline: bool = True
 
 
-def first_leaf(adopted: Adopted, consumer: Consumer) -> str | None:
-    """The first canonical key a seed can override: a leaf outside any declared local slot. None
-    when every canonical key is a slot (audit.toml's ignore list), where only an addition bites."""
+def first_leaf(
+    adopted: Adopted, consumer: Consumer, exceptions: list[LocalException]
+) -> str | None:
+    """The first canonical key a seed can override: a leaf outside any declared local slot, and
+    not one a consumer exception covers, since a seed there is accepted, or overwrites the
+    divergence that keeps the exception alive. None when every canonical key is a slot
+    (audit.toml's ignore list), where only an addition bites. A file whose every such key is
+    covered by an exception cannot be witnessed, and says so."""
     canon = load_structured(consumer.baseline_dir / adopted.canonical) or {}
     if adopted.mode == "table" and adopted.canonical_table:
         canon = subtable(canon, adopted.canonical_table) or {}
     slots = local_slots(consumer, adopted.canonical) if adopted.mode == "superset" else []
     skip = {adopted.key or "extend", "extends", "$schema", "$comment"}
-    for leaf in flatten(canon):
-        if leaf and leaf not in skip and not _in_slot(leaf, slots):
+    leaves = [x for x in flatten(canon) if x and x not in skip and not _in_slot(x, slots)]
+    for leaf in leaves:
+        local_key = _join(adopted.table, leaf) if adopted.mode == "table" else leaf
+        if not any(e.covers(adopted.path, local_key) for e in exceptions):
             return leaf
+    if leaves:
+        raise SeedMissed(
+            f"every key of {adopted.canonical} a seed can override is covered by an exception in "
+            f"exceptions.toml, so no seed on {adopted.path} can bite"
+        )
     return None
+
+
+def consumer_exceptions(consumer: Consumer) -> list[LocalException]:
+    """The consumer's recorded exceptions; a malformed file is check A's to report, not ours."""
+    return load_exceptions(consumer, Report())
 
 
 def adopted_cases(consumer: Consumer) -> list[Case]:
     cases: list[Case] = []
+    exceptions = consumer_exceptions(consumer)
     for adopted in consumer.adopted:
         rel = adopted.path
         if load_structured(consumer.baseline_dir / adopted.canonical) is None:
@@ -1178,7 +1196,7 @@ def adopted_cases(consumer: Consumer) -> list[Case]:
                 )
             )
             continue
-        leaf = first_leaf(adopted, consumer)
+        leaf = first_leaf(adopted, consumer, exceptions)
         if leaf is None and adopted.mode != "superset":
             raise SeedMissed(f"{adopted.canonical} has no key a seed can override")
         if leaf is not None:
@@ -1216,11 +1234,12 @@ def adopted_cases(consumer: Consumer) -> list[Case]:
 def exception_cases(consumer: Consumer) -> list[Case]:
     if not consumer.adopted:
         raise SeedMissed("nothing is adopted, so no exception can be seeded")
+    exceptions = consumer_exceptions(consumer)
     seedable = [
         (a, leaf)
         for a in consumer.adopted
         if load_structured(consumer.baseline_dir / a.canonical)
-        and (leaf := first_leaf(a, consumer)) is not None
+        and (leaf := first_leaf(a, consumer, exceptions)) is not None
     ]
     if not seedable:
         raise SeedMissed("no adopted file has a canonical key to diverge from")

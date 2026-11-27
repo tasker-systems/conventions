@@ -678,6 +678,49 @@ class Witness(Base):
         ):
             self.assertIn(case, result.stdout)
 
+    def except_ruff_target_version(self) -> None:
+        """The consumer departs from ruff.toml's first canonical key, with a reasoned exception
+        (topos#7: the floor raised to py312)."""
+        self.f.write(
+            "ruff.toml",
+            'extend = ".conventions/baseline/python/ruff.toml"\ntarget-version = "py312"\n',
+        )
+        self.f.write(
+            ".conventions/exceptions.toml",
+            '[[exception]]\npath = "ruff.toml"\nkey = "target-version"\n'
+            'reason = "networkx>=3.7 requires Python 3.12"\n',
+        )
+        self.assert_passes(self.f.check())
+
+    def test_witness_holds_with_an_exception_on_the_first_key(self) -> None:
+        self.except_ruff_target_version()
+        result = self.witness()
+        self.assert_passes(result)
+        # Both seeds move off the excepted key, onto one no exception covers, and still bite.
+        self.assertIn("ruff.toml overrides canonical line-length is refused", result.stdout)
+        self.assertNotIn("overrides canonical target-version", result.stdout)
+        self.assertIn(
+            "a reasoned exception covers the divergence it records stays green", result.stdout
+        )
+        self.assertIn("an exception matches no difference is refused", result.stdout)
+
+    def test_witness_names_a_file_whose_every_key_is_excepted(self) -> None:
+        self.f.write("clippy.toml", "disallowed-methods = []\nallow-unwrap-in-tests = false\n")
+        self.f.write(
+            ".conventions/exceptions.toml",
+            "".join(
+                f'[[exception]]\npath = "clippy.toml"\nkey = "{key}"\nreason = "local"\n\n'
+                for key in ("disallowed-methods", "allow-unwrap-in-tests")
+            ),
+        )
+        self.assert_passes(self.f.check())
+        result = self.witness()
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn(
+            "every key of rust/clippy.toml a seed can override is covered by an exception",
+            result.stderr,
+        )
+
     def test_witness_fails_when_check_f_is_disabled(self) -> None:
         tool = self.mutated(
             "    reviewed = load_reviewed_at(consumer.root)\n",
