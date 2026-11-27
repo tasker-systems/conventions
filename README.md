@@ -1,6 +1,6 @@
 # conventions
 
-The shared engineering baseline for tasker-systems repositories. It is public, and six
+The shared engineering baseline for tasker-systems repositories. It is public, and seven
 repositories consume it:
 
 | Consumer | Visibility |
@@ -11,6 +11,7 @@ repositories consume it:
 | [`tasker-contrib`](https://github.com/tasker-systems/tasker-contrib) | public (its own surfaces; templates and example apps are user-owned and out of scope) |
 | `storyteller` | private |
 | [`duet`](https://github.com/tasker-systems/duet) | public |
+| [`topos`](https://github.com/tasker-systems/topos) | public |
 
 The baseline began from the first two. They grew up separately and are each strong where the other
 is thin. tasker-core carries the code-level doctrine (written tenets, a phased lint table, bounded

@@ -34,3 +34,8 @@ private = true
 name = "duet"
 repo = "tasker-systems/duet"
 branch = "main"
+
+[[consumer]]
+name = "topos"
+repo = "tasker-systems/topos"
+branch = "main"
